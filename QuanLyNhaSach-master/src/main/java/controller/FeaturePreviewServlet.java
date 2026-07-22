@@ -11,15 +11,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 // Đã xóa "/danhgia" và "/voucher" để nhường đường dẫn cho Servlet thật hoạt động
-@WebServlet({"/khachhang", "/donhang", "/danhmuc"})
+@WebServlet({ "/donhang", "/danhmuc"})
 public class FeaturePreviewServlet extends HttpServlet {
 
     private static final Map<String, FeatureInfo> FEATURES = new HashMap<>();
 
     static {
-        FEATURES.put("/khachhang", new FeatureInfo("khachhang", "Quan ly khach hang",
-                "Luu thong tin khach mua tai quay, tim theo ten hoac so dien thoai va chon nhanh trong POS.",
-                "bi-people-fill", "NV2", "Can cho POS"));
+
         FEATURES.put("/donhang", new FeatureInfo("donhang", "Don hang va doi tra",
                 "Theo doi lich su don, huy don, doi tra sach va in hoa don tu du lieu DonHang.",
                 "bi-receipt-cutoff", "NV3", "Vong doi ban hang"));

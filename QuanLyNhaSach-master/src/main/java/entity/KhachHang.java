@@ -21,4 +21,7 @@ public class KhachHang {
 
     @Column(name = "DiemTichLuy")
     private Integer diemTichLuy;
+
+    @Column(name = "TrangThai")
+    private Boolean trangThai;
 }

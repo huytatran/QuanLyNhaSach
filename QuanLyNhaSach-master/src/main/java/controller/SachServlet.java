@@ -87,19 +87,41 @@ public class SachServlet extends HttpServlet {
     }
 
     // ================================================================
+    private static final int SO_DONG_MOI_TRANG = 10;
+
     private void hienDanhSach(HttpServletRequest request, HttpServletResponse response, String tuKhoa)
             throws ServletException, IOException {
-        List<Sach> danhSach = (tuKhoa != null && !tuKhoa.trim().isEmpty())
-                ? sachDAO.search(tuKhoa.trim())
-                : sachDAO.getAll();
+
+        int trang = parseTrang(request.getParameter("page"));
+        boolean coTimKiem = (tuKhoa != null && !tuKhoa.trim().isEmpty());
+
+        long tongSo = coTimKiem ? sachDAO.countSearch(tuKhoa.trim()) : sachDAO.countAll();
+        int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
+        if (trang > tongSoTrang) trang = tongSoTrang;
+
+        List<Sach> danhSach = coTimKiem
+                ? sachDAO.search(tuKhoa.trim(), trang, SO_DONG_MOI_TRANG)
+                : sachDAO.getAll(trang, SO_DONG_MOI_TRANG);
 
         Map<String, Long> tonKhoMap = sachDAO.getTonKhoMap();
 
         request.setAttribute("danhSachSach", danhSach);
         request.setAttribute("tonKhoMap", tonKhoMap);
         request.setAttribute("tuKhoa", tuKhoa);
+        request.setAttribute("trangHienTai", trang);
+        request.setAttribute("tongSoTrang", tongSoTrang);
+        request.setAttribute("tongSoSach", tongSo);
         request.setAttribute("activeMenu", "sach");
         request.getRequestDispatcher("/view/sach.jsp").forward(request, response);
+    }
+
+    private int parseTrang(String s) {
+        try {
+            int trang = Integer.parseInt(s.trim());
+            return Math.max(trang, 1);
+        } catch (Exception e) {
+            return 1;
+        }
     }
 
     private void napDuLieuDropdown(HttpServletRequest request) {

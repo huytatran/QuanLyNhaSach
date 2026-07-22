@@ -39,11 +39,6 @@
                 <i class="bi bi-check-circle-fill me-2"></i>Lưu thông tin sách thành công.
             </div>
         </c:if>
-        <c:if test="${param.nhapKhoThanhCong == '1'}">
-            <div class="alert border-0 mb-4" style="background-color: #f0fdf4; color: #166534; border-radius: 8px; font-size: 13.5px;">
-                <i class="bi bi-box-seam-fill me-2"></i>Đã nhập kho thành công.
-            </div>
-        </c:if>
         <c:if test="${param.xoaThanhCong == '1'}">
             <div class="alert border-0 mb-4" style="background-color: #f0fdf4; color: #166534; border-radius: 8px; font-size: 13.5px;">
                 <i class="bi bi-check-circle-fill me-2"></i>Xóa sách thành công.
@@ -52,6 +47,11 @@
         <c:if test="${not empty param.loiXoa}">
             <div class="alert border-0 mb-4" style="background-color: #fef2f2; color: #991b1b; border-radius: 8px; font-size: 13.5px;">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>${param.loiXoa}
+            </div>
+        </c:if>
+        <c:if test="${not empty thongBaoLoi}">
+            <div class="alert border-0 mb-4" style="background-color: #fef2f2; color: #991b1b; border-radius: 8px; font-size: 13.5px;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>${thongBaoLoi}
             </div>
         </c:if>
 
@@ -116,10 +116,6 @@
                                 </c:choose>
                             </td>
                             <td class="text-end pe-3">
-                                <a href="${pageContext.request.contextPath}/nhap-kho?maSach=${s.maSach}"
-                                   class="btn btn-sm btn-outline-success me-1" style="border-radius: 6px;" title="Nhập kho">
-                                    <i class="bi bi-box-seam"></i>
-                                </a>
                                 <a href="${pageContext.request.contextPath}/sach?action=edit&ma=${s.maSach}"
                                    class="btn btn-sm btn-outline-secondary me-1" style="border-radius: 6px;" title="Sửa">
                                     <i class="bi bi-pencil"></i>
@@ -142,12 +138,48 @@
                     </tbody>
                 </table>
             </div>
+
+            <c:if test="${tongSoTrang > 1}">
+                <div class="d-flex justify-content-between align-items-center p-3" style="border-top:1px solid #e2e8f0;">
+                    <span class="text-muted" style="font-size:12.5px;">
+                        Trang ${trangHienTai}/${tongSoTrang} — tổng ${tongSoSach} đầu sách
+                    </span>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <c:url var="urlTruoc" value="/sach">
+                                <c:param name="page" value="${trangHienTai - 1}"/>
+                                <c:if test="${not empty tuKhoa}"><c:param name="q" value="${tuKhoa}"/></c:if>
+                            </c:url>
+                            <li class="page-item ${trangHienTai == 1 ? 'disabled' : ''}">
+                                <a class="page-link" href="${urlTruoc}">‹ Trước</a>
+                            </li>
+                            <c:forEach var="i" begin="1" end="${tongSoTrang}">
+                                <c:url var="urlTrang" value="/sach">
+                                    <c:param name="page" value="${i}"/>
+                                    <c:if test="${not empty tuKhoa}"><c:param name="q" value="${tuKhoa}"/></c:if>
+                                </c:url>
+                                <li class="page-item ${i == trangHienTai ? 'active' : ''}">
+                                    <a class="page-link" href="${urlTrang}"
+                                       style="${i == trangHienTai ? 'background-color:#4f46e5;border-color:#4f46e5;' : 'color:#0f172a;'}">${i}</a>
+                                </li>
+                            </c:forEach>
+                            <c:url var="urlSau" value="/sach">
+                                <c:param name="page" value="${trangHienTai + 1}"/>
+                                <c:if test="${not empty tuKhoa}"><c:param name="q" value="${tuKhoa}"/></c:if>
+                            </c:url>
+                            <li class="page-item ${trangHienTai == tongSoTrang ? 'disabled' : ''}">
+                                <a class="page-link" href="${urlSau}">Sau ›</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </c:if>
         </div>
 
     </div>
 </div>
 
-<!-- Form ẩn phục vụ xóa -->
+<!-- Form ẩn phục vụ xóa (POST để không lộ URL xóa dễ dàng bị lặp qua GET) -->
 <form id="formXoa" method="post" action="${pageContext.request.contextPath}/sach">
     <input type="hidden" name="action" value="delete">
     <input type="hidden" name="ma" id="maSachXoa">

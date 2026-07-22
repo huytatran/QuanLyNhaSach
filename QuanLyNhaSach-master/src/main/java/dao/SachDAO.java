@@ -19,13 +19,36 @@ public class SachDAO {
     public List<Sach> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                            "SELECT DISTINCT s FROM Sach s "
-                                    + "LEFT JOIN FETCH s.theLoai "
-                                    + "LEFT JOIN FETCH s.nhaXuatBan "
-                                    + "LEFT JOIN FETCH s.boSach "
-                                    + "ORDER BY s.maSach",
-                            Sach.class)
+                    "SELECT DISTINCT s FROM Sach s "
+                            + "LEFT JOIN FETCH s.theLoai "
+                            + "LEFT JOIN FETCH s.nhaXuatBan "
+                            + "LEFT JOIN FETCH s.boSach "
+                            + "ORDER BY s.maSach",
+                    Sach.class)
                     .getResultList();
+        }
+    }
+
+    /** Ban co phan trang: trang bat dau tu 1. */
+    public List<Sach> getAll(int trang, int soDongMoiTrang) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.createQuery(
+                    "SELECT DISTINCT s FROM Sach s "
+                            + "LEFT JOIN FETCH s.theLoai "
+                            + "LEFT JOIN FETCH s.nhaXuatBan "
+                            + "LEFT JOIN FETCH s.boSach "
+                            + "ORDER BY s.maSach",
+                    Sach.class)
+                    .setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    public long countAll() {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            Long c = session.createQuery("SELECT COUNT(s) FROM Sach s", Long.class).uniqueResult();
+            return c == null ? 0 : c;
         }
     }
 
@@ -33,15 +56,46 @@ public class SachDAO {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String like = "%" + tuKhoa.toLowerCase() + "%";
             return session.createQuery(
-                            "SELECT DISTINCT s FROM Sach s "
-                                    + "LEFT JOIN FETCH s.theLoai "
-                                    + "LEFT JOIN FETCH s.nhaXuatBan "
-                                    + "LEFT JOIN FETCH s.boSach "
-                                    + "WHERE LOWER(s.maSach) LIKE :q OR LOWER(s.tenSach) LIKE :q "
-                                    + "ORDER BY s.maSach",
-                            Sach.class)
+                    "SELECT DISTINCT s FROM Sach s "
+                            + "LEFT JOIN FETCH s.theLoai "
+                            + "LEFT JOIN FETCH s.nhaXuatBan "
+                            + "LEFT JOIN FETCH s.boSach "
+                            + "WHERE LOWER(s.maSach) LIKE :q OR LOWER(s.tenSach) LIKE :q "
+                            + "ORDER BY s.maSach",
+                    Sach.class)
                     .setParameter("q", like)
                     .getResultList();
+        }
+    }
+
+    /** Ban co phan trang: trang bat dau tu 1. */
+    public List<Sach> search(String tuKhoa, int trang, int soDongMoiTrang) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String like = "%" + tuKhoa.toLowerCase() + "%";
+            return session.createQuery(
+                    "SELECT DISTINCT s FROM Sach s "
+                            + "LEFT JOIN FETCH s.theLoai "
+                            + "LEFT JOIN FETCH s.nhaXuatBan "
+                            + "LEFT JOIN FETCH s.boSach "
+                            + "WHERE LOWER(s.maSach) LIKE :q OR LOWER(s.tenSach) LIKE :q "
+                            + "ORDER BY s.maSach",
+                    Sach.class)
+                    .setParameter("q", like)
+                    .setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    public long countSearch(String tuKhoa) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String like = "%" + tuKhoa.toLowerCase() + "%";
+            Long c = session.createQuery(
+                    "SELECT COUNT(DISTINCT s) FROM Sach s WHERE LOWER(s.maSach) LIKE :q OR LOWER(s.tenSach) LIKE :q",
+                    Long.class)
+                    .setParameter("q", like)
+                    .uniqueResult();
+            return c == null ? 0 : c;
         }
     }
 
@@ -51,12 +105,12 @@ public class SachDAO {
         }
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                            "SELECT s FROM Sach s "
-                                    + "LEFT JOIN FETCH s.theLoai "
-                                    + "LEFT JOIN FETCH s.nhaXuatBan "
-                                    + "LEFT JOIN FETCH s.boSach "
-                                    + "WHERE s.maSach = :ma",
-                            Sach.class)
+                    "SELECT s FROM Sach s "
+                            + "LEFT JOIN FETCH s.theLoai "
+                            + "LEFT JOIN FETCH s.nhaXuatBan "
+                            + "LEFT JOIN FETCH s.boSach "
+                            + "WHERE s.maSach = :ma",
+                    Sach.class)
                     .setParameter("ma", maSach.trim())
                     .uniqueResult();
         }
@@ -68,11 +122,11 @@ public class SachDAO {
     public Map<String, Long> getTonKhoMap() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             List<Object[]> rows = session.createQuery(
-                            "SELECT sv.sach.maSach, COUNT(sv.maSerial) "
-                                    + "FROM SachVatLy sv "
-                                    + "WHERE sv.trangThai = :tt "
-                                    + "GROUP BY sv.sach.maSach",
-                            Object[].class)
+                    "SELECT sv.sach.maSach, COUNT(sv.maSerial) "
+                            + "FROM SachVatLy sv "
+                            + "WHERE sv.trangThai = :tt "
+                            + "GROUP BY sv.sach.maSach",
+                    Object[].class)
                     .setParameter("tt", TRANG_THAI_CO_SAN)
                     .getResultList();
 
@@ -90,10 +144,10 @@ public class SachDAO {
         }
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             List<TacGia> list = session.createQuery(
-                            "SELECT st.tacGia FROM SachTacGia st "
-                                    + "WHERE st.sach.maSach = :ma "
-                                    + "ORDER BY st.vaiTroTG",
-                            TacGia.class)
+                    "SELECT st.tacGia FROM SachTacGia st "
+                            + "WHERE st.sach.maSach = :ma "
+                            + "ORDER BY st.vaiTroTG",
+                    TacGia.class)
                     .setParameter("ma", maSach.trim())
                     .setMaxResults(1)
                     .getResultList();
@@ -158,8 +212,8 @@ public class SachDAO {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             Long soVatLy = session.createQuery(
-                            "SELECT COUNT(sv) FROM SachVatLy sv WHERE sv.sach.maSach = :ma",
-                            Long.class)
+                    "SELECT COUNT(sv) FROM SachVatLy sv WHERE sv.sach.maSach = :ma",
+                    Long.class)
                     .setParameter("ma", maSach.trim())
                     .uniqueResult();
             if (soVatLy != null && soVatLy > 0) {

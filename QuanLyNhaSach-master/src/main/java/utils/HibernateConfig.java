@@ -18,12 +18,12 @@ public class HibernateConfig {
         Properties properties = new Properties();
         properties.put(Environment.DIALECT, "org.hibernate.dialect.SQLServer2016Dialect");
         properties.put(Environment.DRIVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QQuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
+        properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
         properties.put(Environment.USER, "sa");
-        properties.put(Environment.PASS, "Viet216@@");
+        properties.put(Environment.PASS, "Ht272705@");
         properties.put(Environment.SHOW_SQL, "true");
 
-        /*
+        /*Ht272705
             - Khai báo cho Hibernate biết các Class nào trong Java sẽ được ánh xạ xuống database
             - Khi ứng dụng chạy, Hibernate sẽ quét các class xxx1 và xxx2 (thường có annotation @Entity) để quản lý chúng.
         */
