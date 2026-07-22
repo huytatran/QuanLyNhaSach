@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Portal.BookStore">
+  <!-- Soft rounded tile -->
+  <rect width="64" height="64" rx="14" fill="#4f46e5"/>
+
+  <!-- Open book — left page -->
+  <path d="M12 18.5c0-1.1.9-2 2-2h14.2c1.7 0 3.3.7 4.5 1.9l1.3 1.3v26.8c0 .8-.9 1.3-1.6.8l-2.2-1.5a6.4 6.4 0 0 0-3.6-1.1H14c-1.1 0-2-.9-2-2V18.5z" fill="#eef2ff"/>
+  <!-- Open book — right page -->
+  <path d="M52 18.5c0-1.1-.9-2-2-2H35.8c-1.7 0-3.3.7-4.5 1.9L30 19.7v26.8c0 .8.9 1.3 1.6.8l2.2-1.5a6.4 6.4 0 0 1 3.6-1.1H50c1.1 0 2-.9 2-2V18.5z" fill="#f8fafc"/>
+
+  <!-- Spine shadow / gutter -->
+  <path d="M30 19.7v26.8c0 .4-.2.7-.5.9.3-.1.5-.5.5-.9V19.7z" fill="#c7d2fe"/>
+  <path d="M32 21.5v23.5" stroke="#a5b4fc" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- Page lines — left (human, uneven spacing) -->
+  <path d="M16.5 26h10.5M16.5 30.5h9M16.5 35h10.5" stroke="#a5b4fc" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- Page lines — right -->
+  <path d="M37 26h10.5M38.5 30.5h9M37 35h10.5" stroke="#cbd5e1" stroke-width="1.4" stroke-linecap="round"/>
+
+  <!-- Warm bookmark ribbon — soul accent -->
+  <path d="M40.5 14v22.5l-3.2-2.4-3.2 2.4V14h6.4z" fill="#f59e0b"/>
+  <path d="M37.3 14h3.2v16" fill="#fbbf24" opacity=".55"/>
+</svg>
