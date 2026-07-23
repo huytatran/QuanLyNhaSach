@@ -20,7 +20,7 @@ public class HibernateConfig {
         properties.put(Environment.DRIVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
         properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
         properties.put(Environment.USER, "sa");
-        properties.put(Environment.PASS, "Ht272705@");
+        properties.put(Environment.PASS, "123456");
         properties.put(Environment.SHOW_SQL, "true");
 
         /*Ht272705
