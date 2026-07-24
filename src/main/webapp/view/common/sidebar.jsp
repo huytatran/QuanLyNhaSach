@@ -46,7 +46,7 @@
             </a>
         </li>
         <li class="nav-item mb-1">
-            <a href="${pageContext.request.contextPath}/donhang"
+            <a href="${pageContext.request.contextPath}/don-hang"
                class="nav-link d-flex align-items-center ${activeMenu == 'donhang' ? 'text-white' : 'text-white-50 hover-menu'}"
                style="${activeMenu == 'donhang' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
                 <i class="bi bi-receipt-cutoff me-2"></i> Đơn hàng / đổi trả

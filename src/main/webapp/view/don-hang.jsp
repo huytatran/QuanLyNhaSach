@@ -24,6 +24,13 @@
             <p class="text-muted mb-0" style="font-size:13px;">Lịch sử các giao dịch đã thực hiện tại quầy.</p>
         </div>
 
+        <c:if test="${not empty param.message}">
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                ${param.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </c:if>
+
         <div class="card bg-white border" style="border-color:#e2e8f0;border-radius:10px;">
             <div class="table-responsive">
                 <table class="table mb-0">
@@ -53,6 +60,16 @@
                             <td class="text-end fw-bold" style="color:#4f46e5;"><fmt:formatNumber value="${dh.tongTien}" pattern="#,##0"/> ₫</td>
                             <td>${dh.phuongThucThanhToan}</td>
                             <td class="text-center">
+                                <c:if test="${dh.trangThai != 2}">
+                                    <form method="post" action="${pageContext.request.contextPath}/don-hang" class="d-inline"
+                                          onsubmit="return confirm('Xác nhận đổi/trả toàn bộ đơn #${dh.maDH}? Sách sẽ được hoàn lại tồn kho.');">
+                                        <input type="hidden" name="action" value="return">
+                                        <input type="hidden" name="ma" value="${dh.maDH}">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" style="border-radius:6px;">
+                                            <i class="bi bi-arrow-return-left me-1"></i> Đổi/trả
+                                        </button>
+                                    </form>
+                                </c:if>
                                 <%-- Link xem chi tiet don hang --%>
                                 <a href="${pageContext.request.contextPath}/don-hang?action=view&ma=${dh.maDH}"
                                    class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">

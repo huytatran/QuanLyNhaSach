@@ -12,6 +12,9 @@ import java.util.Map;
 
 public class DonHangDAO {
 
+    public static final int TRANG_THAI_DA_GIAO = 1;
+    public static final int TRANG_THAI_DA_TRA = 2;
+
     private static final String CO_SAN = "Có sẵn";
     private static final String DA_BAN = "Đã bán";
 
@@ -69,7 +72,7 @@ public class DonHangDAO {
             DonHang dh = new DonHang();
             dh.setNgayLap(LocalDateTime.now());
             dh.setTongTien(BigDecimal.ZERO); 
-            dh.setTrangThai(1); // Mac dinh 1 la Da giao
+            dh.setTrangThai(TRANG_THAI_DA_GIAO); // Mac dinh 1 la Da giao
             dh.setPhuongThucThanhToan(phuongThuc);
             dh.setKhachHang(kh);
             dh.setNhanVien(nv);
@@ -132,6 +135,43 @@ public class DonHangDAO {
             return dh.getMaDH();
         } catch (RuntimeException e) {
             if (tx != null) tx.rollback();
+            throw e;
+        }
+    }
+
+    /** Hoàn trả toàn bộ đơn: hoàn tồn kho và loại đơn khỏi doanh thu. */
+    public void traDonHang(Integer maDH) {
+        if (maDH == null) {
+            throw new IllegalArgumentException("Mã đơn hàng không hợp lệ.");
+        }
+
+        Transaction tx = null;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            tx = session.beginTransaction();
+            DonHang donHang = session.get(DonHang.class, maDH);
+            if (donHang == null) {
+                throw new IllegalArgumentException("Không tìm thấy đơn hàng.");
+            }
+            if (Integer.valueOf(TRANG_THAI_DA_TRA).equals(donHang.getTrangThai())) {
+                throw new IllegalStateException("Đơn hàng này đã được trả trước đó.");
+            }
+
+            List<SachVatLy> sachDaBan = session.createQuery(
+                            "FROM SachVatLy sv WHERE sv.chiTietDonHang.donHang.maDH = :ma " +
+                                    "AND sv.trangThai = :trangThai",
+                            SachVatLy.class)
+                    .setParameter("ma", maDH)
+                    .setParameter("trangThai", DA_BAN)
+                    .getResultList();
+            for (SachVatLy sach : sachDaBan) {
+                sach.setTrangThai(CO_SAN);
+            }
+            donHang.setTrangThai(TRANG_THAI_DA_TRA);
+            tx.commit();
+        } catch (RuntimeException e) {
+            if (tx != null) {
+                tx.rollback();
+            }
             throw e;
         }
     }
