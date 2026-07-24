@@ -96,7 +96,7 @@
             <a href="${pageContext.request.contextPath}/danhgia"
                class="nav-link d-flex align-items-center ${activeMenu == 'danhgia' ? 'text-white' : 'text-white-50 hover-menu'}"
                style="${activeMenu == 'danhgia' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
-                <i class="bi bi-star-half me-2"></i> Đánh giá sách
+                <i class="bi bi-chat-square-text-fill me-2"></i> Phản hồi khách hàng
             </a>
         </li>
 
