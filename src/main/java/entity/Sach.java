@@ -3,6 +3,7 @@ package entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -37,4 +38,11 @@ public class Sach {
 
     @Column(name = "SoPhan")
     private Integer soPhan;
+
+    @Column(name = "TrangThai")
+    private Boolean trangThai;
+
+    // MỚI: quan hệ ngược tới bảng trung gian Sach_TacGia
+    @OneToMany(mappedBy = "sach")
+    private List<SachTacGia> danhSachTacGia;
 }

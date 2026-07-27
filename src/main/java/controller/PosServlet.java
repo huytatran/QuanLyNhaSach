@@ -35,7 +35,8 @@ public class PosServlet extends HttpServlet {
             throws ServletException, IOException {
 
         String q = request.getParameter("q");
-        List<Sach> danhSach = (q != null && !q.isBlank()) ? sachDAO.search(q.trim()) : sachDAO.getAll();
+        // Chi lay nhung sach dang con kinh doanh (trangThai = true) de ban tai quay POS
+        List<Sach> danhSach = (q != null && !q.isBlank()) ? sachDAO.searchDangBan(q.trim()) : sachDAO.getAllDangBan();
         Map<String, Long> tonKho = sachDAO.getTonKhoMap();
 
         HttpSession session = request.getSession();
@@ -55,7 +56,6 @@ public class PosServlet extends HttpServlet {
         BigDecimal tongTienGio = tinhTong(gioHang);
         BigDecimal soTienGiam = BigDecimal.ZERO;
 
-        // Lấy mã voucher đang được lưu tạm trong Session do người dùng vừa bấm "Áp dụng"
         String maVoucherApDung = (String) session.getAttribute("maVoucherApDung");
         if (maVoucherApDung != null && !maVoucherApDung.isBlank()) {
             soTienGiam = voucherRepo.tinhTienGiamGia(maVoucherApDung, tongTienGio);
@@ -87,7 +87,6 @@ public class PosServlet extends HttpServlet {
         HttpSession session = request.getSession();
         Map<String, Integer> gioHang = (Map<String, Integer>) session.getAttribute("gioHang");
 
-        // Xu ly AJAX them nhanh khach hang
         if ("addKH".equals(action)) {
             String ten = request.getParameter("tenKH");
             String sdt = request.getParameter("sdt");
@@ -150,18 +149,17 @@ public class PosServlet extends HttpServlet {
 
         if ("clear".equals(action)) {
             gioHang.clear();
-            session.removeAttribute("maVoucherApDung"); // Xóa luôn voucher đang áp nếu clear giỏ
+            session.removeAttribute("maVoucherApDung");
             response.sendRedirect(request.getContextPath() + "/pos");
             return;
         }
 
-        // HÀNH ĐỘNG MỚI: Xử lý nút Áp dụng Voucher
         if ("applyVoucher".equals(action)) {
             String maCode = request.getParameter("maCode");
             if (maCode != null && !maCode.isBlank()) {
                 session.setAttribute("maVoucherApDung", maCode);
             } else {
-                session.removeAttribute("maVoucherApDung"); // Nếu khách chọn "Không dùng"
+                session.removeAttribute("maVoucherApDung");
             }
             response.sendRedirect(request.getContextPath() + "/pos");
             return;
@@ -170,7 +168,7 @@ public class PosServlet extends HttpServlet {
         if ("checkout".equals(action)) {
             String maKHStr = request.getParameter("maKH");
             String pttt = request.getParameter("phuongThuc");
-            String maCode = request.getParameter("maCode"); // Lấy mã Voucher được chọn từ POS
+            String maCode = request.getParameter("maCode");
 
             if (maKHStr == null || maKHStr.isBlank()) {
                 response.sendRedirect(request.getContextPath() + "/pos?loi=" +
@@ -185,12 +183,10 @@ public class PosServlet extends HttpServlet {
 
             NhanVien nv = (NhanVien) session.getAttribute("currentUser");
             try {
-                // XỬ LÝ TRỪ LƯỢT VOUCHER KHI THANH TOÁN (CÁCH MỚI AN TOÀN)
                 if (maCode != null && !maCode.isBlank()) {
                     BigDecimal tongTien = tinhTong(gioHang);
                     BigDecimal soTienGiam = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
 
-                    // Nếu voucher có giảm giá hợp lệ, thì gọi hàm tăng số lượt dùng lên 1
                     if (soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
                         voucherRepo.tangLuotSuDung(maCode.trim());
                     }
@@ -203,7 +199,7 @@ public class PosServlet extends HttpServlet {
                         new LinkedHashMap<>(gioHang));
 
                 gioHang.clear();
-                session.removeAttribute("maVoucherApDung"); // Reset voucher khi thanh toán thành công
+                session.removeAttribute("maVoucherApDung");
 
                 response.sendRedirect(request.getContextPath() + "/pos?thanhCong=" + maDH);
             } catch (Exception e) {

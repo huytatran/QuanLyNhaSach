@@ -244,14 +244,29 @@ public class SachServlet extends HttpServlet {
     // ================================================================
     private void xuLyXoa(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String maSach = request.getParameter("ma");
-        boolean thanhCong = sachDAO.delete(maSach);
-        if (thanhCong) {
+        try {
+            sachDAO.ngungKinhDoanh(maSach);
             response.sendRedirect(request.getContextPath() + "/sach?xoaThanhCong=1");
-        } else {
+        } catch (Exception e) {
             response.sendRedirect(request.getContextPath()
                     + "/sach?loiXoa=" + java.net.URLEncoder.encode(
-                    "Không thể xóa \"" + maSach + "\" vì sách này đã có trong kho hoặc đã từng được bán.", "UTF-8"));
+                    "Không thể cập nhật trạng thái sách \"" + maSach + "\": " + e.getMessage(), "UTF-8"));
         }
+    }
+
+    private void xuLyDoiTrangThai(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String maSach = request.getParameter("ma");
+        String trang = request.getParameter("page");
+        String q = request.getParameter("q");
+        try {
+            sachDAO.doiTrangThai(maSach);
+        } catch (Exception ignored) {
+            // bo qua loi nho, quay ve danh sach binh thuong
+        }
+        String redirect = request.getContextPath() + "/sach?"
+                + (trang != null ? "page=" + trang : "page=1")
+                + (q != null && !q.isBlank() ? "&q=" + java.net.URLEncoder.encode(q, "UTF-8") : "");
+        response.sendRedirect(redirect);
     }
 }
 

@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="QuanLyNhaSach" />
+        <module name="QuanLyNhaSach-master" />
       </profile>
     </annotationProcessing>
   </component>

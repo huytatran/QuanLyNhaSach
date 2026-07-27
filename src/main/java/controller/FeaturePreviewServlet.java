@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // Đã xóa "/danhgia" và "/voucher" để nhường đường dẫn cho Servlet thật hoạt động
-@WebServlet({ "/donhang", "/danhmuc"})
+@WebServlet({ "/donhang"})
 public class FeaturePreviewServlet extends HttpServlet {
 
     private static final Map<String, FeatureInfo> FEATURES = new HashMap<>();
@@ -24,9 +24,6 @@ public class FeaturePreviewServlet extends HttpServlet {
         FEATURES.put("/voucher", new FeatureInfo("voucher", "Voucher giam gia",
                 "Tao ma giam gia, dieu kien ap dung va tinh SoTienGiam ngay tren man hinh POS.",
                 "bi-ticket-perforated-fill", "NV4", "Tich hop POS"));
-        FEATURES.put("/danhmuc", new FeatureInfo("danhmuc", "Thuoc tinh sach",
-                "Quan ly the loai, tac gia, nha xuat ban, bo sach va thong tin phan loai sach.",
-                "bi-tags-fill", "Danh muc", "Nen du lieu"));
         FEATURES.put("/danhgia", new FeatureInfo("danhgia", "Danh gia sach",
                 "Ghi nhan diem va nhan xet cua khach cho tung dau sach sau khi mua.",
                 "bi-star-half", "NV4", "Mo rong"));

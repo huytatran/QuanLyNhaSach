@@ -41,7 +41,7 @@
         </c:if>
         <c:if test="${param.xoaThanhCong == '1'}">
             <div class="alert border-0 mb-4" style="background-color: #f0fdf4; color: #166534; border-radius: 8px; font-size: 13.5px;">
-                <i class="bi bi-check-circle-fill me-2"></i>Xóa sách thành công.
+                <i class="bi bi-check-circle-fill me-2"></i>Đã cập nhật trạng thái ngừng kinh doanh cho sách.
             </div>
         </c:if>
         <c:if test="${not empty param.loiXoa}">
@@ -64,7 +64,6 @@
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>${param.loiNhapKho}
             </div>
         </c:if>
-
 
         <div class="card bg-white border mb-3" style="border-color: #e2e8f0; border-radius: 10px;">
             <div class="card-body p-3">
@@ -93,6 +92,7 @@
                         <th>Năm XB</th>
                         <th class="text-end">Giá bán</th>
                         <th class="text-center">Tồn kho</th>
+                        <th class="text-center">Trạng thái</th>
                         <th class="text-end pe-3">Thao tác</th>
                     </tr>
                     </thead>
@@ -126,6 +126,20 @@
                                     </c:otherwise>
                                 </c:choose>
                             </td>
+                            <td class="text-center">
+                                <form method="post" action="${pageContext.request.contextPath}/sach" class="d-inline-block toggle-form">
+                                    <input type="hidden" name="action" value="toggleTrangThai">
+                                    <input type="hidden" name="ma" value="${s.maSach}">
+                                    <input type="hidden" name="page" value="${trangHienTai}">
+                                    <input type="hidden" name="q" value="${tuKhoa}">
+                                    <div class="form-check form-switch d-flex justify-content-center m-0">
+                                        <input class="form-check-input toggle-submit" type="checkbox" role="switch"
+                                               style="width:2.4em;height:1.3em;cursor:pointer;"
+                                            ${s.trangThai == false ? '' : 'checked'}
+                                               title="${s.trangThai == false ? 'Đang ngừng kinh doanh - bấm để bán lại' : 'Đang kinh doanh - bấm để ngừng bán'}">
+                                    </div>
+                                </form>
+                            </td>
                             <td class="text-end pe-3">
                                 <button type="button" class="btn btn-sm btn-outline-success me-1" style="border-radius: 6px;" title="Nhập kho"
                                         data-bs-toggle="modal" data-bs-target="#nhapSachVatLyModal" data-ma-sach="${s.maSach}">
@@ -135,7 +149,7 @@
                                    class="btn btn-sm btn-outline-secondary me-1" style="border-radius: 6px;" title="Sửa">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius: 6px;" title="Xóa"
+                                <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius: 6px;" title="Ngừng kinh doanh"
                                         onclick="xacNhanXoa('${s.maSach}', '${s.tenSach}')">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -144,7 +158,7 @@
                     </c:forEach>
                     <c:if test="${empty danhSachSach}">
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-5" style="font-size: 13.5px;">
+                            <td colspan="9" class="text-center text-muted py-5" style="font-size: 13.5px;">
                                 <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                                 Không có dữ liệu sách nào phù hợp.
                             </td>
@@ -232,11 +246,18 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function xacNhanXoa(maSach, tenSach) {
-        if (confirm('Xóa sách "' + tenSach + '" (' + maSach + ')?\nChỉ xóa được nếu sách chưa từng nhập kho hoặc bán ra.')) {
+        if (confirm('Ngừng kinh doanh sách "' + tenSach + '" (' + maSach + ')?\nSách sẽ bị ẩn khỏi màn hình Bán hàng nhưng lịch sử đơn hàng cũ vẫn giữ nguyên. Bạn có thể bật lại bất cứ lúc nào.')) {
             document.getElementById('maSachXoa').value = maSach;
             document.getElementById('formXoa').submit();
         }
     }
+
+    // Tu dong submit form doi trang thai ngay khi bam vao cong tac
+    document.querySelectorAll('.toggle-submit').forEach(function (chk) {
+        chk.addEventListener('change', function () {
+            this.closest('.toggle-form').submit();
+        });
+    });
 
     // JavaScript để điền mã sách vào modal khi mở
     var nhapSachVatLyModal = document.getElementById('nhapSachVatLyModal');
