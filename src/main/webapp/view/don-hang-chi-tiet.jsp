@@ -10,6 +10,12 @@
         body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .info-label { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; }
         .info-value { font-size: 14px; color: #0f172a; font-weight: 500; }
+        @media print {
+            body { background: #fff; }
+            .no-print, body > div[style*="position: fixed"], nav, header { display: none !important; }
+            body > div[style*="margin-left"] { margin: 0 !important; padding: 0 !important; }
+            .card { border: 0 !important; }
+        }
     </style>
 </head>
 <body>
@@ -24,6 +30,11 @@
                 <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
             </a>
             <h4 class="fw-bold mt-2" style="color:#0f172a;">Chi tiết đơn hàng #${donHang.maDH}</h4>
+            <div class="mt-2 no-print">
+                <button type="button" class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i> In hóa đơn
+                </button>
+            </div>
         </div>
 
         <%-- Card hien thi thong tin chung cua hoa don --%>

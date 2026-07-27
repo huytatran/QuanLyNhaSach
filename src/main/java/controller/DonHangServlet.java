@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @WebServlet("/don-hang")
 public class DonHangServlet extends HttpServlet {
@@ -33,5 +35,28 @@ public class DonHangServlet extends HttpServlet {
         request.setAttribute("danhSachDonHang", donHangDAO.getAll());
         request.setAttribute("activeMenu", "donhang");
         request.getRequestDispatcher("/view/don-hang.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        request.setCharacterEncoding(StandardCharsets.UTF_8);
+        if (!"return".equals(request.getParameter("action"))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
+        try {
+            donHangDAO.traDonHang(Integer.valueOf(request.getParameter("ma")));
+            redirectWithMessage(request, response, "Đơn hàng đã được đổi/trả và tồn kho đã được hoàn lại.");
+        } catch (Exception e) {
+            String message = e.getMessage() == null ? "Không thể đổi/trả đơn hàng." : e.getMessage();
+            redirectWithMessage(request, response, message);
+        }
+    }
+
+    private void redirectWithMessage(HttpServletRequest request, HttpServletResponse response, String message)
+            throws IOException {
+        response.sendRedirect(request.getContextPath() + "/don-hang?message=" +
+                URLEncoder.encode(message, StandardCharsets.UTF_8));
     }
 }
