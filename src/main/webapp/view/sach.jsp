@@ -54,6 +54,17 @@
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>${thongBaoLoi}
             </div>
         </c:if>
+        <c:if test="${param.nhapKhoThanhCong == '1'}">
+            <div class="alert border-0 mb-4" style="background-color: #f0fdf4; color: #166534; border-radius: 8px; font-size: 13.5px;">
+                <i class="bi bi-check-circle-fill me-2"></i>Nhập sách vật lý thành công.
+            </div>
+        </c:if>
+        <c:if test="${not empty param.loiNhapKho}">
+            <div class="alert border-0 mb-4" style="background-color: #fef2f2; color: #991b1b; border-radius: 8px; font-size: 13.5px;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>${param.loiNhapKho}
+            </div>
+        </c:if>
+
 
         <div class="card bg-white border mb-3" style="border-color: #e2e8f0; border-radius: 10px;">
             <div class="card-body p-3">
@@ -116,6 +127,10 @@
                                 </c:choose>
                             </td>
                             <td class="text-end pe-3">
+                                <button type="button" class="btn btn-sm btn-outline-success me-1" style="border-radius: 6px;" title="Nhập kho"
+                                        data-bs-toggle="modal" data-bs-target="#nhapSachVatLyModal" data-ma-sach="${s.maSach}">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                </button>
                                 <a href="${pageContext.request.contextPath}/sach?action=edit&ma=${s.maSach}"
                                    class="btn btn-sm btn-outline-secondary me-1" style="border-radius: 6px;" title="Sửa">
                                     <i class="bi bi-pencil"></i>
@@ -179,6 +194,35 @@
     </div>
 </div>
 
+<!-- Modal Nhập sách vật lý -->
+<div class="modal fade" id="nhapSachVatLyModal" tabindex="-1" aria-labelledby="nhapSachVatLyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nhapSachVatLyModalLabel">Nhập sách vật lý</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="${pageContext.request.contextPath}/nhap-kho" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="nhapSachVatLy">
+                    <div class="mb-3">
+                        <label for="maSachNhap" class="form-label">Mã đầu sách</label>
+                        <input type="text" class="form-control" id="maSachNhap" name="maSach" required readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="danhSachSerial" class="form-label">Danh sách Mã Serial (mỗi mã một dòng)</label>
+                        <textarea class="form-control" id="danhSachSerial" name="danhSachSerial" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" style="background-color: #10b981; border-color: #10b981;">Lưu nhập kho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Form ẩn phục vụ xóa (POST để không lộ URL xóa dễ dàng bị lặp qua GET) -->
 <form id="formXoa" method="post" action="${pageContext.request.contextPath}/sach">
     <input type="hidden" name="action" value="delete">
@@ -193,6 +237,21 @@
             document.getElementById('formXoa').submit();
         }
     }
+
+    // JavaScript để điền mã sách vào modal khi mở
+    var nhapSachVatLyModal = document.getElementById('nhapSachVatLyModal');
+    nhapSachVatLyModal.addEventListener('show.bs.modal', function (event) {
+        // Nút đã kích hoạt modal
+        var button = event.relatedTarget;
+        // Lấy thông tin từ thuộc tính data-bs-ma-sach
+        var maSach = button.getAttribute('data-ma-sach');
+        // Cập nhật trường input mã sách trong modal
+        var modalMaSachInput = nhapSachVatLyModal.querySelector('#maSachNhap');
+        modalMaSachInput.value = maSach;
+
+        // Xóa nội dung cũ của textarea danhSachSerial mỗi khi modal mở
+        nhapSachVatLyModal.querySelector('#danhSachSerial').value = '';
+    });
 </script>
 </body>
 </html>
