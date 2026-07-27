@@ -108,7 +108,7 @@
                                                     <input type="hidden" name="action" value="update">
                                                     <input type="hidden" name="ma" value="${item.maSach}">
                                                     <input type="number" name="soLuong" value="${item.soLuong}" min="1" max="${item.ton}" class="form-control form-control-sm" style="width:70px;">
-                                                    <button class="btn btn-sm btn-outline-secondary">OK</button>
+                                                    <button class="btn btn-sm btn-outline-secondary">Update</button>
                                                 </form>
                                                     <%-- Form xoa mon hang --%>
                                                 <form method="post" action="${pageContext.request.contextPath}/pos">
@@ -171,7 +171,7 @@
                                 <label class="form-label mb-1" style="font-size:12.5px;font-weight:600;color:#475569;">Voucher áp dụng</label>
                                 <div class="d-flex gap-2">
                                     <select name="maCode" class="form-select" style="font-size:13.5px;">
-                                        <option value="">-- Không dùng voucher --</option>
+                                        <option value="">-- Chọn mã voucher --</option>
                                         <c:forEach var="v" items="${dsVoucher}">
                                             <!-- Dùng EL để giữ trạng thái mã đang được chọn -->
                                             <option value="${v.maCode}" ${v.maCode == maVoucherApDung ? 'selected' : ''}>
