@@ -116,7 +116,19 @@ public class VoucherRepo {
             return null;
         }
     }
-
+    // Lấy danh sách voucher hợp lệ để hiển thị trên màn hình POS
+    public List<Voucher> getVouchersHopLe() {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            LocalDateTime now = LocalDateTime.now();
+            String hql = "SELECT v FROM Voucher v WHERE :now >= v.ngayBatDau AND :now <= v.ngayKetThuc AND v.daSuDung < v.soLuongToiDa";
+            Query<Voucher> query = session.createQuery(hql, Voucher.class);
+            query.setParameter("now", now);
+            return query.getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
     // 4. Hàm tính chính xác số tiền khách được giảm (NV3 sẽ gọi hàm này)
     public BigDecimal tinhTienGiamGia(String maCode, BigDecimal tongTienDonHang) {
         // 4.1 Check xem mã có hợp lệ không
@@ -155,5 +167,6 @@ public class VoucherRepo {
         }
 
         return soTienGiam;
+
     }
 }

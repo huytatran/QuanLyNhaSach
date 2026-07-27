@@ -63,7 +63,7 @@
                                     <td class="text-end"><fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</td>
                                     <td class="text-center">${ton}</td>
                                     <td class="text-end pe-3">
-                                        <%-- Form them sach vao gio hang --%>
+                                            <%-- Form them sach vao gio hang --%>
                                         <form method="post" action="${pageContext.request.contextPath}/pos" class="d-inline">
                                             <input type="hidden" name="action" value="add">
                                             <input type="hidden" name="ma" value="${s.maSach}">
@@ -103,14 +103,14 @@
                                         <div class="d-flex justify-content-between align-items-center mt-1">
                                             <span class="text-muted" style="font-size:12.5px;"><fmt:formatNumber value="${item.donGia}" pattern="#,##0"/> ₫</span>
                                             <div class="d-flex align-items-center gap-1">
-                                                <%-- Form cap nhat so luong --%>
+                                                    <%-- Form cap nhat so luong --%>
                                                 <form method="post" action="${pageContext.request.contextPath}/pos" class="d-flex gap-1">
                                                     <input type="hidden" name="action" value="update">
                                                     <input type="hidden" name="ma" value="${item.maSach}">
                                                     <input type="number" name="soLuong" value="${item.soLuong}" min="1" max="${item.ton}" class="form-control form-control-sm" style="width:70px;">
                                                     <button class="btn btn-sm btn-outline-secondary">OK</button>
                                                 </form>
-                                                <%-- Form xoa mon hang --%>
+                                                    <%-- Form xoa mon hang --%>
                                                 <form method="post" action="${pageContext.request.contextPath}/pos">
                                                     <input type="hidden" name="action" value="remove">
                                                     <input type="hidden" name="ma" value="${item.maSach}">
@@ -124,14 +124,26 @@
                             </c:otherwise>
                         </c:choose>
 
-                        <div class="d-flex justify-content-between mt-3 mb-3">
-                            <span class="fw-semibold">Tổng tiền</span>
-                            <span class="fw-bold" style="color:#4f46e5;font-size:18px;"><fmt:formatNumber value="${tongTienGio}" pattern="#,##0"/> ₫</span>
+                        <!-- KHU VỰC HIỂN THỊ TIỀN ĐÃ NÂNG CẤP -->
+                        <div class="d-flex justify-content-between mt-3 mb-1">
+                            <span class="fw-semibold">Tổng tiền hàng</span>
+                            <span class="fw-bold"><fmt:formatNumber value="${tongTienGio}" pattern="#,##0"/> ₫</span>
                         </div>
 
-                        <%-- FORM THANH TOAN --%>
+                        <c:if test="${soTienGiam != null && soTienGiam > 0}">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-semibold text-danger">Voucher giảm</span>
+                                <span class="fw-bold text-danger">-<fmt:formatNumber value="${soTienGiam}" pattern="#,##0"/> ₫</span>
+                            </div>
+                        </c:if>
+
+                        <div class="d-flex justify-content-between mt-2 mb-3 pt-2 border-top">
+                            <span class="fw-bold fs-6">Khách phải trả</span>
+                            <span class="fw-bold fs-5" style="color:#4f46e5;"><fmt:formatNumber value="${tongTienPhaiTra}" pattern="#,##0"/> ₫</span>
+                        </div>
+
+                        <%-- FORM THANH TOÁN --%>
                         <form method="post" action="${pageContext.request.contextPath}/pos">
-                            <input type="hidden" name="action" value="checkout">
 
                             <div class="mb-2">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -154,15 +166,36 @@
                                 </div>
                             </div>
 
+                            <%-- Ô CHỌN VOUCHER VÀ NÚT ÁP DỤNG --%>
+                            <div class="mb-2">
+                                <label class="form-label mb-1" style="font-size:12.5px;font-weight:600;color:#475569;">Voucher áp dụng</label>
+                                <div class="d-flex gap-2">
+                                    <select name="maCode" class="form-select" style="font-size:13.5px;">
+                                        <option value="">-- Không dùng voucher --</option>
+                                        <c:forEach var="v" items="${dsVoucher}">
+                                            <!-- Dùng EL để giữ trạng thái mã đang được chọn -->
+                                            <option value="${v.maCode}" ${v.maCode == maVoucherApDung ? 'selected' : ''}>
+                                                    ${v.maCode} - Giảm ${v.loaiGiam == 1 ? v.giaTri.intValue() += '%' : v.giaTri.intValue() += 'đ'} (Đơn từ ${v.giaTriDonToiThieu.intValue()}đ)
+                                            </option>
+                                        </c:forEach>
+                                    </select>
+                                    <button type="submit" name="action" value="applyVoucher" class="btn btn-outline-primary btn-sm px-3">
+                                        Áp dụng
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:12.5px;font-weight:600;color:#475569;">Thanh toán</label>
+                                <label class="form-label mb-1" style="font-size:12.5px;font-weight:600;color:#475569;">Thanh toán</label>
                                 <select name="phuongThuc" class="form-select" style="font-size:13.5px;">
                                     <option>Tiền mặt</option>
                                     <option>Chuyển khoản</option>
                                     <option>Thẻ</option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn w-100 text-white fw-semibold" style="background:#4f46e5;border-radius:8px;" ${empty chiTietGio ? 'disabled' : ''}>
+
+                            <!-- Đã thêm thuộc tính name="action" value="checkout" vào nút Thanh toán -->
+                            <button type="submit" name="action" value="checkout" class="btn w-100 text-white fw-semibold" style="background:#4f46e5;border-radius:8px;" ${empty chiTietGio ? 'disabled' : ''}>
                                 <i class="bi bi-bag-check me-1"></i> Thanh toán
                             </button>
                         </form>
@@ -237,23 +270,23 @@
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: params
         })
-        .then(res => res.json())
-        .then(data => {
-            // Them option moi vao select box
-            const newOpt = new Option(data.tenKH + ' - ' + (sdt || ''), data.maKH);
-            selectKH.add(newOpt);
-            selectKH.value = data.maKH; // Chon luon khach hang vua tao
+            .then(res => res.json())
+            .then(data => {
+                // Them option moi vao select box
+                const newOpt = new Option(data.tenKH + ' - ' + (sdt || ''), data.maKH);
+                selectKH.add(newOpt);
+                selectKH.value = data.maKH; // Chon luon khach hang vua tao
 
-            // Cap nhat mang options goc de sau nay tim kiem van ra
-            originalOptions.push(newOpt);
+                // Cap nhat mang options goc de sau nay tim kiem van ra
+                originalOptions.push(newOpt);
 
-            // Dong modal va reset form
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalThemKH'));
-            modal.hide();
-            document.getElementById('newTenKH').value = '';
-            document.getElementById('newSdtKH').value = '';
-        })
-        .catch(err => alert('Lỗi: ' + err));
+                // Dong modal va reset form
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalThemKH'));
+                modal.hide();
+                document.getElementById('newTenKH').value = '';
+                document.getElementById('newSdtKH').value = '';
+            })
+            .catch(err => alert('Lỗi: ' + err));
     }
 </script>
 </body>

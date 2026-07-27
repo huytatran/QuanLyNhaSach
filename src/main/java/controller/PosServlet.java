@@ -6,6 +6,8 @@ import dao.SachDAO;
 import entity.KhachHang;
 import entity.NhanVien;
 import entity.Sach;
+import entity.Voucher;
+import repository.VoucherRepo;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -26,6 +28,7 @@ public class PosServlet extends HttpServlet {
     private final SachDAO sachDAO = new SachDAO();
     private final KhachHangDAO khachHangDAO = new KhachHangDAO();
     private final DonHangDAO donHangDAO = new DonHangDAO();
+    private final VoucherRepo voucherRepo = new VoucherRepo();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -46,8 +49,30 @@ public class PosServlet extends HttpServlet {
         request.setAttribute("danhSachSach", danhSach);
         request.setAttribute("tonKhoMap", tonKho);
         request.setAttribute("dsKhachHang", khachHangDAO.getAll());
+        request.setAttribute("dsVoucher", voucherRepo.getVouchersHopLe());
         request.setAttribute("chiTietGio", buildChiTietGio(gioHang, tonKho));
-        request.setAttribute("tongTienGio", tinhTong(gioHang));
+
+        // ------------------ LOGIC TÍNH TIỀN CÓ VOUCHER ------------------
+        BigDecimal tongTienGio = tinhTong(gioHang);
+        BigDecimal soTienGiam = BigDecimal.ZERO;
+
+        // Lấy mã voucher đang được lưu tạm trong Session do người dùng vừa bấm "Áp dụng"
+        String maVoucherApDung = (String) session.getAttribute("maVoucherApDung");
+        if (maVoucherApDung != null && !maVoucherApDung.isBlank()) {
+            soTienGiam = voucherRepo.tinhTienGiamGia(maVoucherApDung, tongTienGio);
+        }
+
+        BigDecimal tongTienPhaiTra = tongTienGio.subtract(soTienGiam);
+        if (tongTienPhaiTra.compareTo(BigDecimal.ZERO) < 0) {
+            tongTienPhaiTra = BigDecimal.ZERO;
+        }
+
+        request.setAttribute("tongTienGio", tongTienGio);
+        request.setAttribute("soTienGiam", soTienGiam);
+        request.setAttribute("tongTienPhaiTra", tongTienPhaiTra);
+        request.setAttribute("maVoucherApDung", maVoucherApDung);
+        // ----------------------------------------------------------------
+
         request.setAttribute("tuKhoa", q);
         request.setAttribute("activeMenu", "pos");
         request.getRequestDispatcher("/view/pos.jsp").forward(request, response);
@@ -62,7 +87,7 @@ public class PosServlet extends HttpServlet {
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
         Map<String, Integer> gioHang = (Map<String, Integer>) session.getAttribute("gioHang");
-        
+
         // Xu ly AJAX them nhanh khach hang
         if ("addKH".equals(action)) {
             String ten = request.getParameter("tenKH");
@@ -72,9 +97,9 @@ public class PosServlet extends HttpServlet {
                 kh.setTenKH(ten.trim());
                 kh.setSdt(sdt != null ? sdt.trim() : "");
                 KhachHang saved = khachHangDAO.insert(kh);
-                
+
                 response.setContentType("application/json");
-                response.getWriter().write(String.format("{\"maKH\": %d, \"tenKH\": \"%s\"}", 
+                response.getWriter().write(String.format("{\"maKH\": %d, \"tenKH\": \"%s\"}",
                         saved.getMaKH(), saved.getTenKH()));
             }
             return;
@@ -126,6 +151,19 @@ public class PosServlet extends HttpServlet {
 
         if ("clear".equals(action)) {
             gioHang.clear();
+            session.removeAttribute("maVoucherApDung"); // Xóa luôn voucher đang áp nếu clear giỏ
+            response.sendRedirect(request.getContextPath() + "/pos");
+            return;
+        }
+
+        // HÀNH ĐỘNG MỚI: Xử lý nút Áp dụng Voucher
+        if ("applyVoucher".equals(action)) {
+            String maCode = request.getParameter("maCode");
+            if (maCode != null && !maCode.isBlank()) {
+                session.setAttribute("maVoucherApDung", maCode);
+            } else {
+                session.removeAttribute("maVoucherApDung"); // Nếu khách chọn "Không dùng"
+            }
             response.sendRedirect(request.getContextPath() + "/pos");
             return;
         }
@@ -133,6 +171,8 @@ public class PosServlet extends HttpServlet {
         if ("checkout".equals(action)) {
             String maKHStr = request.getParameter("maKH");
             String pttt = request.getParameter("phuongThuc");
+            String maCode = request.getParameter("maCode"); // Lấy mã Voucher được chọn từ POS
+
             if (maKHStr == null || maKHStr.isBlank()) {
                 response.sendRedirect(request.getContextPath() + "/pos?loi=" +
                         java.net.URLEncoder.encode("Vui lòng chọn khách hàng.", "UTF-8"));
@@ -146,12 +186,29 @@ public class PosServlet extends HttpServlet {
 
             NhanVien nv = (NhanVien) session.getAttribute("currentUser");
             try {
+                // XỬ LÝ TRỪ LƯỢT VOUCHER KHI THANH TOÁN
+                if (maCode != null && !maCode.isBlank()) {
+                    Voucher voucher = voucherRepo.checkVoucherHopLe(maCode.trim());
+                    if (voucher != null) {
+                        BigDecimal tongTien = tinhTong(gioHang);
+                        BigDecimal soTienGiam = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
+                        // Nếu voucher giảm giá hợp lệ, cập nhật lượt dùng +1
+                        if (soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
+                            voucher.setDaSuDung(voucher.getDaSuDung() + 1);
+                            voucherRepo.add(voucher);
+                        }
+                    }
+                }
+
                 int maDH = donHangDAO.taoDonHang(
                         Integer.valueOf(maKHStr),
                         nv.getMaNV(),
                         (pttt == null || pttt.isBlank()) ? "Tiền mặt" : pttt,
                         new LinkedHashMap<>(gioHang));
+
                 gioHang.clear();
+                session.removeAttribute("maVoucherApDung"); // Reset voucher khi thanh toán thành công
+
                 response.sendRedirect(request.getContextPath() + "/pos?thanhCong=" + maDH);
             } catch (Exception e) {
                 response.sendRedirect(request.getContextPath() + "/pos?loi=" +
