@@ -116,6 +116,7 @@ public class VoucherRepo {
             return null;
         }
     }
+
     // Lấy danh sách voucher hợp lệ để hiển thị trên màn hình POS
     public List<Voucher> getVouchersHopLe() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -129,6 +130,7 @@ public class VoucherRepo {
             return null;
         }
     }
+
     // 4. Hàm tính chính xác số tiền khách được giảm (NV3 sẽ gọi hàm này)
     public BigDecimal tinhTienGiamGia(String maCode, BigDecimal tongTienDonHang) {
         // 4.1 Check xem mã có hợp lệ không
@@ -167,6 +169,23 @@ public class VoucherRepo {
         }
 
         return soTienGiam;
+    }
 
+    // 5. Tự động tăng số lượt sử dụng của Voucher thêm 1 bằng HQL (Tránh lỗi Session)
+    public void tangLuotSuDung(String maCode) {
+        Transaction transaction = null;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            transaction = session.beginTransaction();
+            String hql = "UPDATE Voucher SET daSuDung = daSuDung + 1 WHERE maCode = :ma";
+            Query query = session.createQuery(hql);
+            query.setParameter("ma", maCode);
+            query.executeUpdate();
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+        }
     }
 }

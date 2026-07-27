@@ -6,7 +6,6 @@ import dao.SachDAO;
 import entity.KhachHang;
 import entity.NhanVien;
 import entity.Sach;
-import entity.Voucher;
 import repository.VoucherRepo;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -186,17 +185,14 @@ public class PosServlet extends HttpServlet {
 
             NhanVien nv = (NhanVien) session.getAttribute("currentUser");
             try {
-                // XỬ LÝ TRỪ LƯỢT VOUCHER KHI THANH TOÁN
+                // XỬ LÝ TRỪ LƯỢT VOUCHER KHI THANH TOÁN (CÁCH MỚI AN TOÀN)
                 if (maCode != null && !maCode.isBlank()) {
-                    Voucher voucher = voucherRepo.checkVoucherHopLe(maCode.trim());
-                    if (voucher != null) {
-                        BigDecimal tongTien = tinhTong(gioHang);
-                        BigDecimal soTienGiam = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
-                        // Nếu voucher giảm giá hợp lệ, cập nhật lượt dùng +1
-                        if (soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
-                            voucher.setDaSuDung(voucher.getDaSuDung() + 1);
-                            voucherRepo.add(voucher);
-                        }
+                    BigDecimal tongTien = tinhTong(gioHang);
+                    BigDecimal soTienGiam = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
+
+                    // Nếu voucher có giảm giá hợp lệ, thì gọi hàm tăng số lượt dùng lên 1
+                    if (soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
+                        voucherRepo.tangLuotSuDung(maCode.trim());
                     }
                 }
 
