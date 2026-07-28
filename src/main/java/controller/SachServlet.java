@@ -89,6 +89,11 @@ public class SachServlet extends HttpServlet {
             return;
         }
 
+        if ("toggleTrangThai".equals(action)) {
+            xuLyDoiTrangThai(request, response);
+            return;
+        }
+
         // Mac dinh: luu (them moi hoac cap nhat)
         xuLyLuu(request, response);
     }
