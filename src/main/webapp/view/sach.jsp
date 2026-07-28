@@ -86,6 +86,7 @@
                     <thead>
                     <tr>
                         <th class="ps-3">Mã sách</th>
+                        <th class="text-center">Ảnh</th>
                         <th>Tên sách</th>
                         <th>Thể loại</th>
                         <th>Nhà xuất bản</th>
@@ -101,13 +102,15 @@
                         <c:set var="ton" value="${empty tonKhoMap[s.maSach] ? 0 : tonKhoMap[s.maSach]}" />
                         <tr>
                             <td class="ps-3"><span class="fw-semibold">${s.maSach}</span></td>
-                            <td>
+                            <td class="text-center" style="width:60px;">
                                 <c:if test="${not empty s.anhBia}">
                                     <img src="${s.anhBia}"
                                          alt="${s.tenSach}"
-                                         style="width:44px;height:58px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0; margin-right:10px; vertical-align:middle;"
+                                         style="width:44px;height:58px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;"
                                          onerror="this.style.display='none'" />
                                 </c:if>
+                            </td>
+                            <td>
                                 ${s.tenSach}
                                 <c:if test="${not empty s.boSach}">
                                     <span class="badge rounded-pill" style="background-color:#eef2ff;color:#4338ca;font-size:10.5px;font-weight:600;">
@@ -118,7 +121,7 @@
                             <td>${s.theLoai.tenTL}</td>
                             <td>${s.nhaXuatBan.tenNXB}</td>
                             <td>${s.namXB}</td>
-                            <td class="text-end"><fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</td>
+                            <td class="text-end" style="white-space:nowrap;"><fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</td>
                             <td class="text-center">
                                 <c:choose>
                                     <c:when test="${ton == 0}">
