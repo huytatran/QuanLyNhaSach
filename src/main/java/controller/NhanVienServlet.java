@@ -62,16 +62,37 @@ public class NhanVienServlet extends HttpServlet {
             NhanVien current = (NhanVien) session.getAttribute("currentUser");
             if (current != null && current.getMaNV().equals(ma)) {
                 response.sendRedirect(request.getContextPath() + "/nhanvien?loiXoa=" +
-                        java.net.URLEncoder.encode("Không thể xóa tài khoản đang đăng nhập.", "UTF-8"));
+                        java.net.URLEncoder.encode("Không thể chuyển tài khoản đang đăng nhập sang Nghỉ làm.", "UTF-8"));
                 return;
             }
-            boolean ok = nhanVienDAO.delete(ma);
+            boolean ok = nhanVienDAO.nghiLam(ma);
             if (ok) {
                 response.sendRedirect(request.getContextPath() + "/nhanvien?xoaThanhCong=1");
             } else {
                 response.sendRedirect(request.getContextPath() + "/nhanvien?loiXoa=" +
-                        java.net.URLEncoder.encode("Không xóa được (có thể đã lập đơn hàng).", "UTF-8"));
+                        java.net.URLEncoder.encode("Không cập nhật được trạng thái.", "UTF-8"));
             }
+            return;
+        }
+
+        if ("toggleTrangThai".equals(action)) {
+            Integer ma = parseInt(request.getParameter("ma"));
+            String q = request.getParameter("q");
+            HttpSession session = request.getSession(false);
+            NhanVien current = session == null ? null : (NhanVien) session.getAttribute("currentUser");
+            if (current != null && current.getMaNV().equals(ma)) {
+                response.sendRedirect(request.getContextPath()
+                        + "/nhanvien?loiXoa=" + java.net.URLEncoder.encode("Không thể đổi trạng thái tài khoản đang đăng nhập.", "UTF-8")
+                        + (q != null && !q.isBlank() ? "&q=" + java.net.URLEncoder.encode(q.trim(), "UTF-8") : ""));
+                return;
+            }
+            try {
+                nhanVienDAO.doiTrangThai(ma);
+            } catch (Exception ignored) {
+            }
+            response.sendRedirect(request.getContextPath()
+                    + "/nhanvien"
+                    + (q != null && !q.isBlank() ? "?q=" + java.net.URLEncoder.encode(q.trim(), "UTF-8") : ""));
             return;
         }
 

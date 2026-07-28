@@ -32,7 +32,7 @@
             <div class="alert border-0 mb-3" style="background:#f0fdf4;color:#166534;border-radius:8px;font-size:13.5px;">Lưu nhân viên thành công.</div>
         </c:if>
         <c:if test="${param.xoaThanhCong == '1'}">
-            <div class="alert border-0 mb-3" style="background:#f0fdf4;color:#166534;border-radius:8px;font-size:13.5px;">Xóa nhân viên thành công.</div>
+            <div class="alert border-0 mb-3" style="background:#f0fdf4;color:#166534;border-radius:8px;font-size:13.5px;">Đã cập nhật trạng thái nhân viên thành Nghỉ làm.</div>
         </c:if>
         <c:if test="${not empty param.loiXoa}">
             <div class="alert border-0 mb-3" style="background:#fef2f2;color:#991b1b;border-radius:8px;font-size:13.5px;">${param.loiXoa}</div>
@@ -61,6 +61,7 @@
                         <th>SĐT</th>
                         <th>Email</th>
                         <th>Vai trò</th>
+                        <th class="text-center">Trạng thái</th>
                         <th class="text-end pe-3">Thao tác</th>
                     </tr>
                     </thead>
@@ -78,15 +79,39 @@
                                     <c:otherwise><span class="badge rounded-pill" style="background:#f1f5f9;color:#475569;">Nhân viên</span></c:otherwise>
                                 </c:choose>
                             </td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column align-items-center gap-1">
+                                    <c:choose>
+                                        <c:when test="${nv.trangThai == false}">
+                                            <span class="badge rounded-pill" style="background:#fef2f2;color:#991b1b;">Nghỉ làm</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="badge rounded-pill" style="background:#f0fdf4;color:#166534;">Đang làm</span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                    <form method="post" action="${pageContext.request.contextPath}/nhanvien" class="d-inline-block toggle-form m-0">
+                                        <input type="hidden" name="action" value="toggleTrangThai">
+                                        <input type="hidden" name="ma" value="${nv.maNV}">
+                                        <input type="hidden" name="q" value="${tuKhoa}">
+                                        <div class="form-check form-switch d-flex justify-content-center m-0">
+                                            <input class="form-check-input toggle-submit" type="checkbox" role="switch"
+                                                   style="width:2.4em;height:1.3em;cursor:pointer;"
+                                                    ${nv.trangThai == false ? '' : 'checked'}
+                                                   title="${nv.trangThai == false ? 'Nghỉ làm - bấm để chuyển Đang làm' : 'Đang làm - bấm để chuyển Nghỉ làm'}">
+                                        </div>
+                                    </form>
+                                </div>
+                            </td>
                             <td class="text-end pe-3">
                                 <a href="${pageContext.request.contextPath}/nhanvien?action=edit&ma=${nv.maNV}" class="btn btn-sm btn-outline-secondary me-1" style="border-radius:6px;"><i class="bi bi-pencil"></i></a>
                                 <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:6px;"
+                                        title="Chuyển sang Nghỉ làm"
                                         onclick="xoaNV(${nv.maNV}, '${nv.tenNV}')"><i class="bi bi-trash"></i></button>
                             </td>
                         </tr>
                     </c:forEach>
                     <c:if test="${empty danhSachNV}">
-                        <tr><td colspan="7" class="text-center text-muted py-5">Không có nhân viên.</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted py-5">Không có nhân viên.</td></tr>
                     </c:if>
                     </tbody>
                 </table>
@@ -101,11 +126,17 @@
 </form>
 <script>
     function xoaNV(ma, ten) {
-        if (confirm('Xóa nhân viên "' + ten + '"?')) {
+        if (confirm('Chuyển nhân viên "' + ten + '" sang Nghỉ làm?\nKhông xóa dữ liệu, chỉ cập nhật trạng thái.')) {
             document.getElementById('maXoa').value = ma;
             document.getElementById('formXoa').submit();
         }
     }
+
+    document.querySelectorAll('.toggle-submit').forEach(function (chk) {
+        chk.addEventListener('change', function () {
+            this.closest('.toggle-form').submit();
+        });
+    });
 </script>
 </body>
 </html>

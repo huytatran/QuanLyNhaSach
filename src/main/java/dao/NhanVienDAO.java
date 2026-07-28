@@ -15,7 +15,8 @@ public class NhanVienDAO {
         }
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                            "FROM NhanVien nv WHERE nv.taiKhoan = :tk AND nv.matKhau = :mk",
+                            "FROM NhanVien nv WHERE nv.taiKhoan = :tk AND nv.matKhau = :mk "
+                                    + "AND (nv.trangThai = true OR nv.trangThai IS NULL)",
                             NhanVien.class)
                     .setParameter("tk", taiKhoan.trim())
                     .setParameter("mk", matKhau)
@@ -75,6 +76,7 @@ public class NhanVienDAO {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             tx = session.beginTransaction();
+            if (nv.getTrangThai() == null) nv.setTrangThai(true);
             session.persist(nv);
             tx.commit();
         } catch (RuntimeException e) {
@@ -106,25 +108,33 @@ public class NhanVienDAO {
         }
     }
 
-    /** @return false neu dang co don hang hoac khong ton tai */
-    public boolean delete(Integer maNV) {
+    public boolean nghiLam(Integer maNV) {
         if (maNV == null) return false;
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            Long soDon = session.createQuery(
-                            "SELECT COUNT(dh) FROM DonHang dh WHERE dh.nhanVien.maNV = :ma",
-                            Long.class)
-                    .setParameter("ma", maNV)
-                    .uniqueResult();
-            if (soDon != null && soDon > 0) return false;
-
             NhanVien nv = session.get(NhanVien.class, maNV);
             if (nv == null) return false;
 
             tx = session.beginTransaction();
-            session.remove(nv);
+            nv.setTrangThai(false);
+            session.merge(nv);
             tx.commit();
             return true;
+        } catch (RuntimeException e) {
+            if (tx != null) tx.rollback();
+            throw e;
+        }
+    }
+
+    public void doiTrangThai(Integer maNV) {
+        Transaction tx = null;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            tx = session.beginTransaction();
+            NhanVien nv = session.get(NhanVien.class, maNV);
+            if (nv == null) throw new IllegalArgumentException("Không tìm thấy nhân viên.");
+            nv.setTrangThai(!Boolean.TRUE.equals(nv.getTrangThai()));
+            session.merge(nv);
+            tx.commit();
         } catch (RuntimeException e) {
             if (tx != null) tx.rollback();
             throw e;
