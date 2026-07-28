@@ -42,7 +42,12 @@ public class Sach {
     @Column(name = "TrangThai")
     private Boolean trangThai;
 
+    // Lưu path tương đối để hiển thị ảnh (ví dụ: uploads/books/S001.jpg)
+    @Column(name = "AnhBia")
+    private String anhBia;
+
     // MỚI: quan hệ ngược tới bảng trung gian Sach_TacGia
-    @OneToMany(mappedBy = "sach")
+    @OneToMany(mappedBy = "sach", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<SachTacGia> danhSachTacGia;
 }

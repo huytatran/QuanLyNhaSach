@@ -3,13 +3,19 @@ package controller;
 import dao.*;
 import entity.*;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +32,7 @@ import java.util.Map;
  *  POST /sach?action=delete&ma=... -> xoa
  */
 @WebServlet("/sach")
+@MultipartConfig
 public class SachServlet extends HttpServlet {
 
     private final SachDAO sachDAO = new SachDAO();
@@ -162,6 +169,15 @@ public class SachServlet extends HttpServlet {
         Sach sach = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr);
         Integer maTacGia = (maTacGiaStr == null || maTacGiaStr.isEmpty()) ? null : Integer.valueOf(maTacGiaStr);
 
+        // ---- Xử lý ảnh bìa: ưu tiên file upload, fallback về hidden URL cũ ----
+        String anhBiaPath = xuLyUploadAnhBia(request, maSach);
+        if (anhBiaPath != null) {
+            sach.setAnhBia(anhBiaPath);
+        } else {
+            String anhBiaHidden = request.getParameter("anhBia");
+            sach.setAnhBia((anhBiaHidden != null && !anhBiaHidden.isBlank()) ? anhBiaHidden.trim() : null);
+        }
+
         try {
             if ("sua".equals(mode)) {
                 sachDAO.update(sach, maTacGia);
@@ -239,6 +255,70 @@ public class SachServlet extends HttpServlet {
     private BigDecimal chuoiSangTien(String s) {
         try { return (s == null || s.isEmpty()) ? BigDecimal.ZERO : new BigDecimal(s.trim()); }
         catch (NumberFormatException e) { return BigDecimal.ZERO; }
+    }
+
+    /**
+     * Upload ảnh bìa theo MaSach (optional).
+     *
+     * @return path tương đối để hiển thị (ví dụ: uploads/books/S001.jpg), hoặc null nếu không upload.
+     */
+    private String xuLyUploadAnhBia(HttpServletRequest request, String maSach) throws ServletException, IOException {
+        try {
+            System.out.println("=== [UPLOAD START] maSach=" + maSach);
+
+            if (maSach == null || maSach.isBlank()) {
+                System.out.println("=== [UPLOAD] maSach null → return null");
+                return null;
+            }
+
+            Part part = request.getPart("anhBiaFile");
+            System.out.println("=== [UPLOAD] part=" + part + ", size=" + (part != null ? part.getSize() : "N/A") + ", fileName=" + (part != null ? part.getSubmittedFileName() : "N/A"));
+
+            if (part == null || part.getSize() <= 0) {
+                System.out.println("=== [UPLOAD] part null hoặc size=0 → return null");
+                return null;
+            }
+
+            String submitted = part.getSubmittedFileName();
+            if (submitted == null || submitted.isBlank()) {
+                System.out.println("=== [UPLOAD] fileName blank → return null");
+                return null;
+            }
+
+            String ext = "";
+            int dot = submitted.lastIndexOf('.');
+            if (dot >= 0 && dot < submitted.length() - 1) {
+                ext = submitted.substring(dot).toLowerCase();
+            }
+            System.out.println("=== [UPLOAD] ext=" + ext);
+
+            if (!ext.equals(".jpg") && !ext.equals(".jpeg")
+                    && !ext.equals(".png") && !ext.equals(".gif")
+                    && !ext.equals(".webp")) {
+                System.out.println("=== [UPLOAD] ext không hợp lệ → return null");
+                return null;
+            }
+
+            Path dirPath = Paths.get("D:/DoAn_NhomDuAn1/uploads/books");
+            Files.createDirectories(dirPath);
+
+            String fileName = maSach + ext;
+            Path target = dirPath.resolve(fileName);
+
+            try (InputStream in = part.getInputStream()) {
+                Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            System.out.println("=== [UPLOAD] THÀNH CÔNG: " + target.toAbsolutePath());
+            return "book-images/" + fileName;
+
+        } catch (ServletException | IOException e) {
+            System.out.println("=== [UPLOAD] EXCEPTION: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.out.println("=== [UPLOAD] EXCEPTION: " + e.getMessage());
+            throw new ServletException("Upload thất bại: " + e.getMessage(), e);
+        }
     }
 
     // ================================================================

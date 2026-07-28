@@ -29,7 +29,8 @@ public class AuthorizationFilter implements Filter {
         boolean isStaticResource = requestURI.startsWith(contextPath + "/css/")
                 || requestURI.startsWith(contextPath + "/js/")
                 || requestURI.startsWith(contextPath + "/images/")
-                || requestURI.startsWith(contextPath + "/assets/");
+                || requestURI.startsWith(contextPath + "/assets/")
+                || requestURI.startsWith(contextPath + "/book-images/");
 
         // 2. Kiểm tra xem đã đăng nhập chưa
         boolean isLoggedIn = (session != null && session.getAttribute("currentUser") != null);

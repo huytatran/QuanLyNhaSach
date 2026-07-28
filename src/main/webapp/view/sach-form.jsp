@@ -37,7 +37,7 @@
 
         <div class="card bg-white border" style="border-color: #e2e8f0; border-radius: 10px;">
             <div class="card-body p-4">
-                <form method="post" action="${pageContext.request.contextPath}/sach">
+                <form method="post" action="${pageContext.request.contextPath}/sach" enctype="multipart/form-data">
                     <input type="hidden" name="mode" value="${dangSua ? 'sua' : 'them'}">
                     <input type="hidden" name="action" value="save">
 
@@ -51,6 +51,23 @@
                         <div class="col-md-8">
                             <label class="form-label">Tên sách *</label>
                             <input type="text" name="tenSach" value="${sach.tenSach}" class="form-control" placeholder="Nhập tên sách" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Ảnh bìa</label>
+                            <%-- Preview ảnh hiện tại (khi sửa) --%>
+                            <div class="mb-2 text-center" id="previewContainer"
+                                 style="${not empty sach.anhBia ? '' : 'display:none'}">
+                                <img id="imgPreview"
+                                     src="${not empty sach.anhBia ? sach.anhBia : ''}"
+                                     alt="Ảnh bìa"
+                                     style="width:80px;height:105px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"
+                                     onerror="this.closest('#previewContainer').style.display='none'">
+                            </div>
+                            <input type="file" name="anhBiaFile" id="anhBiaFile"
+                                   accept="image/*" class="form-control"
+                                   onchange="previewAnh(this)">
+                            <input type="hidden" name="anhBia" id="anhBiaUrl" value="${sach.anhBia}">
                         </div>
 
                         <div class="col-md-4">
@@ -130,6 +147,20 @@
         inputSoPhan.disabled = (this.value === '');
         if (this.value === '') inputSoPhan.value = '';
     });
+
+    // Preview ảnh ngay khi chọn file
+    function previewAnh(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const container = document.getElementById('previewContainer');
+                const img = document.getElementById('imgPreview');
+                img.src = e.target.result;
+                container.style.display = '';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 </script>
 </body>
 </html>

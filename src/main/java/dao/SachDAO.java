@@ -220,9 +220,25 @@ public class SachDAO {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             tx = session.beginTransaction();
-            session.merge(sach);
 
-            // Xoa lien ket tac gia cu roi gan lai (1 tac gia chinh tren form)
+            // Load entity từ DB để Hibernate không cố resolve lazy collection
+            Sach old = session.get(Sach.class, sach.getMaSach());
+            if (old == null) throw new IllegalArgumentException("Không tìm thấy sách.");
+
+            // Copy các field cần cập nhật từ form vào entity đang được quản lý
+            old.setTenSach(sach.getTenSach());
+            old.setNamXB(sach.getNamXB());
+            old.setGiaBan(sach.getGiaBan());
+            old.setTheLoai(sach.getTheLoai());
+            old.setNhaXuatBan(sach.getNhaXuatBan());
+            old.setBoSach(sach.getBoSach());
+            old.setSoPhan(sach.getSoPhan());
+            old.setAnhBia(sach.getAnhBia()); // null = xóa ảnh, có giá trị = cập nhật ảnh
+            if (sach.getTrangThai() != null) old.setTrangThai(sach.getTrangThai());
+
+            session.merge(old);
+
+            // Xóa liên kết tác giả cũ rồi gán lại
             session.createMutationQuery("DELETE FROM SachTacGia st WHERE st.sach.maSach = :ma")
                     .setParameter("ma", sach.getMaSach())
                     .executeUpdate();
@@ -231,9 +247,7 @@ public class SachDAO {
             }
             tx.commit();
         } catch (RuntimeException e) {
-            if (tx != null) {
-                tx.rollback();
-            }
+            if (tx != null) tx.rollback();
             throw e;
         }
     }

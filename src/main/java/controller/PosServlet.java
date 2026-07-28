@@ -220,6 +220,7 @@ public class PosServlet extends HttpServlet {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("maSach", s.getMaSach());
             row.put("tenSach", s.getTenSach());
+            row.put("anhBia", s.getAnhBia());   // thêm ảnh bìa vào giỏ
             row.put("donGia", s.getGiaBan());
             row.put("soLuong", e.getValue());
             row.put("thanhTien", s.getGiaBan().multiply(BigDecimal.valueOf(e.getValue())));

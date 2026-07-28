@@ -102,7 +102,13 @@
                         <tr>
                             <td class="ps-3"><span class="fw-semibold">${s.maSach}</span></td>
                             <td>
-                                    ${s.tenSach}
+                                <c:if test="${not empty s.anhBia}">
+                                    <img src="${s.anhBia}"
+                                         alt="${s.tenSach}"
+                                         style="width:44px;height:58px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0; margin-right:10px; vertical-align:middle;"
+                                         onerror="this.style.display='none'" />
+                                </c:if>
+                                ${s.tenSach}
                                 <c:if test="${not empty s.boSach}">
                                     <span class="badge rounded-pill" style="background-color:#eef2ff;color:#4338ca;font-size:10.5px;font-weight:600;">
                                         ${s.boSach.tenBoSach} <c:if test="${not empty s.soPhan}"> · #${s.soPhan}</c:if>

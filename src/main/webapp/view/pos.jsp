@@ -63,7 +63,6 @@
                                     <td class="text-end"><fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</td>
                                     <td class="text-center">${ton}</td>
                                     <td class="text-end pe-3">
-                                            <%-- Form them sach vao gio hang --%>
                                         <form method="post" action="${pageContext.request.contextPath}/pos" class="d-inline">
                                             <input type="hidden" name="action" value="add">
                                             <input type="hidden" name="ma" value="${s.maSach}">
@@ -99,26 +98,48 @@
                             <c:otherwise>
                                 <c:forEach var="item" items="${chiTietGio}">
                                     <div class="border-bottom py-2" style="border-color:#e2e8f0 !important;">
-                                        <div class="fw-semibold" style="font-size:13.5px;">${item.tenSach}</div>
-                                        <div class="d-flex justify-content-between align-items-center mt-1">
-                                            <span class="text-muted" style="font-size:12.5px;"><fmt:formatNumber value="${item.donGia}" pattern="#,##0"/> ₫</span>
-                                            <div class="d-flex align-items-center gap-1">
-                                                    <%-- Form cap nhat so luong --%>
-                                                <form method="post" action="${pageContext.request.contextPath}/pos" class="d-flex gap-1">
-                                                    <input type="hidden" name="action" value="update">
-                                                    <input type="hidden" name="ma" value="${item.maSach}">
-                                                    <input type="number" name="soLuong" value="${item.soLuong}" min="1" max="${item.ton}" class="form-control form-control-sm" style="width:70px;">
-                                                    <button class="btn btn-sm btn-outline-secondary">Update</button>
-                                                </form>
-                                                    <%-- Form xoa mon hang --%>
-                                                <form method="post" action="${pageContext.request.contextPath}/pos">
-                                                    <input type="hidden" name="action" value="remove">
-                                                    <input type="hidden" name="ma" value="${item.maSach}">
-                                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                                                </form>
+                                        <%-- Khung sách: ảnh bìa + thông tin --%>
+                                        <div class="d-flex gap-2 align-items-start">
+                                            <%-- Ảnh bìa --%>
+                                            <div style="flex-shrink:0; width:72px; height:96px; background:#f1f5f9; border-radius:8px; border:1px solid #e2e8f0; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                                                <c:choose>
+                                                    <c:when test="${not empty item.anhBia}">
+                                                        <img src="${item.anhBia}"
+                                                             alt="${item.tenSach}"
+                                                             style="width:100%;height:100%;object-fit:cover;"
+                                                             onerror="this.parentElement.innerHTML='<i class=\'bi bi-book\' style=\'color:#94a3b8;font-size:24px;\'></i>'"/>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <i class="bi bi-book" style="color:#94a3b8;font-size:24px;"></i>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                            <%-- Thông tin sách --%>
+                                            <div class="flex-grow-1 overflow-hidden">
+                                                <div class="fw-semibold text-truncate" style="font-size:13.5px;" title="${item.tenSach}">${item.tenSach}</div>
+                                                <div class="text-muted" style="font-size:12px;"><fmt:formatNumber value="${item.donGia}" pattern="#,##0"/> ₫ / cuốn</div>
+                                                <div class="d-flex align-items-center gap-1 mt-1">
+                                                    <form method="post" action="${pageContext.request.contextPath}/pos" class="d-flex gap-1">
+                                                        <input type="hidden" name="action" value="update">
+                                                        <input type="hidden" name="ma" value="${item.maSach}">
+                                                        <input type="number" name="soLuong" value="${item.soLuong}" min="1" max="${item.ton}"
+                                                               class="form-control form-control-sm" style="width:60px;font-size:12px;">
+                                                        <button class="btn btn-sm btn-outline-secondary" style="font-size:11px;padding:2px 8px;">
+                                                            <i class="bi bi-check-lg"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form method="post" action="${pageContext.request.contextPath}/pos">
+                                                        <input type="hidden" name="action" value="remove">
+                                                        <input type="hidden" name="ma" value="${item.maSach}">
+                                                        <button class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:2px 7px;"><i class="bi bi-trash"></i></button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <%-- Thành tiền --%>
+                                            <div class="text-end fw-semibold" style="font-size:13px;white-space:nowrap;flex-shrink:0;">
+                                                <fmt:formatNumber value="${item.thanhTien}" pattern="#,##0"/> ₫
                                             </div>
                                         </div>
-                                        <div class="text-end" style="font-size:13px;"><fmt:formatNumber value="${item.thanhTien}" pattern="#,##0"/> ₫</div>
                                     </div>
                                 </c:forEach>
                             </c:otherwise>
