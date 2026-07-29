@@ -29,19 +29,39 @@ public class SachDAO {
         }
     }
 
-    /** Ban co phan trang: trang bat dau tu 1. */
+    /** Ban co phan trang: trang bat dau tu 1. Sach con hang len truoc, het hang xuong sau. */
     public List<Sach> getAll(int trang, int soDongMoiTrang) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
-            return session.createQuery(
-                    "SELECT DISTINCT s FROM Sach s "
-                            + "LEFT JOIN FETCH s.theLoai "
-                            + "LEFT JOIN FETCH s.nhaXuatBan "
-                            + "LEFT JOIN FETCH s.boSach "
-                            + "ORDER BY s.maSach",
-                    Sach.class)
-                    .setFirstResult((trang - 1) * soDongMoiTrang)
-                    .setMaxResults(soDongMoiTrang)
+            // Dung native SQL de ORDER BY ton kho (subquery)
+            String sql =
+                "SELECT s.MaSach FROM Sach s " +
+                "LEFT JOIN (SELECT MaSach, COUNT(*) AS TonKho FROM SachVatLy " +
+                "           WHERE TrangThai = N'Có sẵn' GROUP BY MaSach) tk ON s.MaSach = tk.MaSach " +
+                "ORDER BY CASE WHEN ISNULL(tk.TonKho, 0) > 0 THEN 0 ELSE 1 END, s.MaSach " +
+                "OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY";
+
+            @SuppressWarnings("unchecked")
+            List<String> maSachList = session.createNativeQuery(sql, String.class)
+                    .setParameter("offset", (trang - 1) * soDongMoiTrang)
+                    .setParameter("limit", soDongMoiTrang)
                     .getResultList();
+
+            if (maSachList.isEmpty()) return java.util.Collections.emptyList();
+
+            // Fetch entity day du kem JOIN FETCH
+            List<Sach> result = session.createQuery(
+                    "SELECT DISTINCT s FROM Sach s " +
+                    "LEFT JOIN FETCH s.theLoai " +
+                    "LEFT JOIN FETCH s.nhaXuatBan " +
+                    "LEFT JOIN FETCH s.boSach " +
+                    "WHERE s.maSach IN :maList",
+                    Sach.class)
+                    .setParameter("maList", maSachList)
+                    .getResultList();
+
+            // Giu dung thu tu tu native query
+            result.sort(java.util.Comparator.comparingInt(s -> maSachList.indexOf(s.getMaSach())));
+            return result;
         }
     }
 
@@ -104,22 +124,40 @@ public class SachDAO {
         }
     }
 
-    /** Ban co phan trang: trang bat dau tu 1. */
+    /** Ban co phan trang: trang bat dau tu 1. Sach con hang len truoc, het hang xuong sau. */
     public List<Sach> search(String tuKhoa, int trang, int soDongMoiTrang) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             String like = "%" + tuKhoa.toLowerCase() + "%";
-            return session.createQuery(
-                    "SELECT DISTINCT s FROM Sach s "
-                            + "LEFT JOIN FETCH s.theLoai "
-                            + "LEFT JOIN FETCH s.nhaXuatBan "
-                            + "LEFT JOIN FETCH s.boSach "
-                            + "WHERE LOWER(s.maSach) LIKE :q OR LOWER(s.tenSach) LIKE :q "
-                            + "ORDER BY s.maSach",
-                    Sach.class)
+
+            String sql =
+                "SELECT s.MaSach FROM Sach s " +
+                "LEFT JOIN (SELECT MaSach, COUNT(*) AS TonKho FROM SachVatLy " +
+                "           WHERE TrangThai = N'Có sẵn' GROUP BY MaSach) tk ON s.MaSach = tk.MaSach " +
+                "WHERE LOWER(s.MaSach) LIKE :q OR LOWER(s.TenSach) LIKE :q " +
+                "ORDER BY CASE WHEN ISNULL(tk.TonKho, 0) > 0 THEN 0 ELSE 1 END, s.MaSach " +
+                "OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY";
+
+            @SuppressWarnings("unchecked")
+            List<String> maSachList = session.createNativeQuery(sql, String.class)
                     .setParameter("q", like)
-                    .setFirstResult((trang - 1) * soDongMoiTrang)
-                    .setMaxResults(soDongMoiTrang)
+                    .setParameter("offset", (trang - 1) * soDongMoiTrang)
+                    .setParameter("limit", soDongMoiTrang)
                     .getResultList();
+
+            if (maSachList.isEmpty()) return java.util.Collections.emptyList();
+
+            List<Sach> result = session.createQuery(
+                    "SELECT DISTINCT s FROM Sach s " +
+                    "LEFT JOIN FETCH s.theLoai " +
+                    "LEFT JOIN FETCH s.nhaXuatBan " +
+                    "LEFT JOIN FETCH s.boSach " +
+                    "WHERE s.maSach IN :maList",
+                    Sach.class)
+                    .setParameter("maList", maSachList)
+                    .getResultList();
+
+            result.sort(java.util.Comparator.comparingInt(s -> maSachList.indexOf(s.getMaSach())));
+            return result;
         }
     }
 
