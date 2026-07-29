@@ -201,19 +201,49 @@ docs/
 
 ---
 
-## 👤 Phân quyền
+## ✅ Chức năng đã hoàn chỉnh
 
-| Tính năng | Admin | Nhân viên |
-|-----------|:-----:|:---------:|
-| Dashboard | ✅ | ✅ |
-| Bán hàng (POS) | ✅ | ✅ |
-| Quản lý Sách | ✅ | ✅ |
-| Đơn hàng | ✅ | ✅ |
-| Khách hàng | ✅ | ✅ |
-| Voucher | ✅ | ✅ |
-| Phản hồi KH | ✅ | ✅ |
-| Quản lý Nhân viên | ✅ | ❌ |
-| Báo cáo doanh thu | ✅ | ❌ |
+| Module | Chức năng |
+|--------|-----------|
+| **Đăng nhập** | Login, logout, auto-logout sau 15 phút |
+| **Phân quyền** | Admin/Nhân viên, filter theo role |
+| **Dashboard** | Thống kê 4 chỉ số, đơn hàng gần đây |
+| **Bán hàng (POS)** | Giỏ hàng, checkout, áp voucher, thêm KH nhanh |
+| **Quản lý Sách** | CRUD, ảnh bìa, phân trang, tìm kiếm, toggle trạng thái, sắp xếp theo tồn kho |
+| **Nhập kho** | Nhập serial hàng loạt |
+| **Khách hàng** | CRUD, địa chỉ, toggle trạng thái |
+| **Nhân viên** | CRUD (Admin only) |
+| **Đơn hàng** | Xem danh sách, chi tiết, đổi/trả |
+| **Voucher** | Tạo mới, phân trang, kết thúc sớm |
+| **Phản hồi KH** | Xem danh sách, thêm mới |
+| **Báo cáo** | Doanh thu, top sách bán chạy (Admin only) |
+| **Thuộc tính sách** | CRUD Thể loại, Tác giả, NXB, Bộ sách |
+
+---
+
+## 🔧 Chức năng có nhưng chưa hoàn chỉnh
+
+| Vấn đề | Mô tả |
+|--------|-------|
+| **Phản hồi KH — lỗi field** | Form gửi `binhLuan`/`diem` nhưng Servlet đọc `noiDung`/`soSao` → không lưu được |
+| **Đơn hàng — thiếu tìm kiếm** | Không có lọc theo ngày/khách/trạng thái |
+| **Báo cáo — chỉ có bảng số** | Chưa có biểu đồ doanh thu theo ngày |
+| **Dashboard — thiếu doanh thu** | Chưa hiển thị doanh thu hôm nay |
+
+---
+
+## 💡 Chức năng có thể bổ sung
+
+| Chức năng | Độ ưu tiên |
+|-----------|-----------|
+| Fix lỗi Phản hồi KH | 🔴 Cao |
+| Tìm kiếm/lọc đơn hàng | 🟡 Trung bình |
+| Biểu đồ doanh thu (Chart.js) | 🟡 Trung bình |
+| In hóa đơn bán hàng | 🟡 Trung bình |
+| Hủy đơn hàng | 🟡 Trung bình |
+| Sửa voucher | 🟢 Thấp |
+| Export báo cáo Excel | 🟢 Thấp |
+| Kiểm kê kho (xem toàn bộ serial) | 🟢 Thấp |
 
 ---
 
@@ -230,6 +260,31 @@ BoSach ────┴──► Sach ◄──── Sach_TacGia
                                                      │
                                               KhachHang + NhanVien + Voucher
 ```
+
+---
+
+## 🔑 Tài khoản mặc định
+
+| Tài khoản | Mật khẩu | Vai trò |
+|-----------|----------|---------|
+| `admin` | `123456` | Quản trị viên |
+| `nhanvien` | `123456` | Nhân viên |
+
+---
+
+## 👤 Phân quyền
+
+| Tính năng | Admin | Nhân viên |
+|-----------|:-----:|:---------:|
+| Dashboard | ✅ | ✅ |
+| Bán hàng (POS) | ✅ | ✅ |
+| Quản lý Sách | ✅ | ✅ |
+| Đơn hàng | ✅ | ✅ |
+| Khách hàng | ✅ | ✅ |
+| Voucher | ✅ | ✅ |
+| Phản hồi KH | ✅ | ✅ |
+| Quản lý Nhân viên | ✅ | ❌ |
+| Báo cáo doanh thu | ✅ | ❌ |
 
 ---
 
