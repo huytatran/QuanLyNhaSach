@@ -36,4 +36,5 @@ public class NhanVien {
 
     @Column(name = "TrangThai")
     private Boolean trangThai;
+
 }

@@ -8,7 +8,7 @@
     <Resources>
         <PostResources
             className="org.apache.catalina.webresources.DirResourceSet"
-            base="D:/DoAn_NhomDuAn1/uploads/books"
+            base="H:\QuanLyNhaSach"
             webAppMount="/book-images"
             internalPath="/" />
     </Resources>
