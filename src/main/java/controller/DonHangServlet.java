@@ -59,6 +59,19 @@ public class DonHangServlet extends HttpServlet {
             return;
         }
 
+        if ("in-hoa-don".equals(action)) {
+            Integer ma = Integer.valueOf(request.getParameter("ma"));
+            DonHang dh = donHangDAO.getById(ma);
+            if (dh == null) {
+                response.sendRedirect(request.getContextPath() + "/don-hang?message=" +
+                        URLEncoder.encode("Không tìm thấy đơn hàng.", StandardCharsets.UTF_8));
+                return;
+            }
+            request.setAttribute("donHang", dh);
+            request.getRequestDispatcher("/view/hoa-don-in.jsp").forward(request, response);
+            return;
+        }
+
         request.setAttribute("danhSachDonHang", donHangDAO.getAll());
         request.setAttribute("activeMenu", "donhang");
         request.getRequestDispatcher("/view/don-hang.jsp").forward(request, response);

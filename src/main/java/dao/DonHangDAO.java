@@ -171,6 +171,7 @@ public class DonHangDAO {
 
             ct.setSoLuongDaTra(daTra + soLuongTra);
             session.merge(ct);
+            session.flush(); // Dam bao trang thai 'Co san' cua sach vua tra duoc ghi nhan ngay
 
             BigDecimal soTienHoan = ct.getDonGia().multiply(BigDecimal.valueOf(soLuongTra));
             donHang.setTongTien(donHang.getTongTien().subtract(soTienHoan));
@@ -232,10 +233,23 @@ public class DonHangDAO {
                 throw new IllegalStateException("Sách \"" + sachMoi.getTenSach() + "\" đã ngừng kinh doanh, không thể chọn để đổi.");
             }
 
+            // Dieu kien doi hang: chi duoc doi sang sach co gia BANG hoac CAO HON gia sach cu
+            // (khong cho doi sang sach re hon de tranh phat sinh hoan tien qua chuc nang doi;
+            // neu khach muon lay sach re hon, nghiep vu se la Tra hang roi mua lai).
+            BigDecimal giaCu = ctCu.getDonGia() == null ? BigDecimal.ZERO : ctCu.getDonGia();
+            BigDecimal giaMoi = sachMoi.getGiaBan() == null ? BigDecimal.ZERO : sachMoi.getGiaBan();
+            if (giaMoi.compareTo(giaCu) < 0) {
+                throw new IllegalArgumentException(
+                        "Chỉ được đổi sang sách có giá bằng hoặc cao hơn giá sách \"" + ctCu.getSach().getTenSach() +
+                        "\" (" + formatTien(giaCu) + " ₫). Sách \"" + sachMoi.getTenSach() + "\" có giá " +
+                        formatTien(giaMoi) + " ₫, thấp hơn nên không thể chọn để đổi.");
+            }
+
             // Hoan kho hang cu
             hoanKhoChoDongCu(session, ctCu, soLuongTra);
             ctCu.setSoLuongDaTra(daTra + soLuongTra);
             session.merge(ctCu);
+            session.flush(); // Dam bao cac cuon vua hoan kho duoc thay ngay neu doi sang cung dau sach
 
             // Xuat kho hang moi
             List<SachVatLy> cuonCoSan = session.createQuery(
@@ -324,6 +338,13 @@ public class DonHangDAO {
                     .setParameter("ma", maDoiTra)
                     .uniqueResult();
         }
+    }
+
+    /** Dinh dang so tien don gian (nhom 3 chu so bang dau cham) de dua vao thong bao loi. */
+    private String formatTien(BigDecimal tien) {
+        if (tien == null) return "0";
+        return String.format("%,d", tien.setScale(0, java.math.RoundingMode.HALF_UP).longValueExact())
+                .replace(',', '.');
     }
 
     private void kiemTraDonConTheDoiTra(DonHang donHang) {

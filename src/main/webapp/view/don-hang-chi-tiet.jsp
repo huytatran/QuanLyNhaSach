@@ -17,28 +17,13 @@
         .badge-loai-gd { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; }
         .badge-loai-tra { background: #fee2e2; color: #b91c1c; }
         .badge-loai-doi { background: #ede9fe; color: #6d28d9; }
-
-        /* Khu vuc in hoa don - an tren man hinh, chi hien khi in.
-           Thay the cach in ca dashboard cu (kho trinh chieu) bang mot ban hoa don gon, sach. */
-        #khu-vuc-in { display: none; }
-
-        @media print {
-            body * { visibility: hidden; }
-            #khu-vuc-in, #khu-vuc-in * { visibility: visible; }
-            #khu-vuc-in {
-                display: block !important;
-                position: absolute; top: 0; left: 0; width: 100%;
-                padding: 24px; font-family: "Segoe UI", Arial, sans-serif; color: #000;
-            }
-            .no-print { display: none !important; }
-        }
     </style>
 </head>
 <body>
 <jsp:include page="common/sidebar.jsp" />
 <jsp:include page="common/topbar.jsp" />
 
-<div style="margin-left: 280px; margin-top: 60px;" class="p-4 no-print">
+<div style="margin-left: 280px; margin-top: 60px;" class="p-4">
     <div class="container-fluid" style="max-width: 900px;">
 
         <div class="mb-4">
@@ -60,9 +45,10 @@
                         </c:otherwise>
                     </c:choose>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="window.print()">
+                <a href="${pageContext.request.contextPath}/don-hang?action=in-hoa-don&ma=${donHang.maDH}"
+                   target="_blank" class="btn btn-primary">
                     <i class="bi bi-printer me-1"></i> In hóa đơn
-                </button>
+                </a>
             </div>
         </div>
 
@@ -267,11 +253,23 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Đổi sang sách</label>
-                        <select class="form-select" name="maSachMoi" required>
+                        <c:set var="soSachPhuHop" value="0" />
+                        <select class="form-select" name="maSachMoi" ${empty sachCoTheDoi ? 'disabled' : ''} required>
                             <c:forEach var="s" items="${sachCoTheDoi}">
-                                <option value="${s.maSach}">${s.tenSach} - <fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</option>
+                                <c:if test="${s.giaBan >= ct.donGia}">
+                                    <c:set var="soSachPhuHop" value="${soSachPhuHop + 1}" />
+                                    <option value="${s.maSach}">${s.tenSach} - <fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</option>
+                                </c:if>
                             </c:forEach>
                         </select>
+                        <div class="form-text" style="font-size:12px;">
+                            Chỉ hiển thị sách có giá bán ≥ giá sách đang đổi (<fmt:formatNumber value="${ct.donGia}" pattern="#,##0"/> ₫).
+                        </div>
+                        <c:if test="${soSachPhuHop == 0}">
+                            <div class="text-danger mt-1" style="font-size:12.5px;">
+                                Hiện không có sách nào đủ điều kiện (giá bằng hoặc cao hơn) để đổi sang. Vui lòng dùng chức năng "Trả" thay thế.
+                            </div>
+                        </c:if>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Số lượng sách mới</label>
@@ -282,70 +280,17 @@
                         <textarea class="form-control" name="lyDo" rows="2"></textarea>
                     </div>
                     <div class="alert alert-secondary" style="font-size:12.5px;">
-                        Chênh lệch tiền (thu thêm hoặc hoàn lại khách) sẽ được hệ thống tự tính sau khi xác nhận.
+                        Chỉ được đổi sang sách có giá bằng hoặc cao hơn giá sách gốc. Chênh lệch tiền (thu thêm hoặc hoàn lại khách) sẽ được hệ thống tự tính sau khi xác nhận.
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Xác nhận đổi hàng</button>
+                    <button type="submit" class="btn btn-primary" ${soSachPhuHop == 0 ? 'disabled' : ''}>Xác nhận đổi hàng</button>
                 </div>
             </form>
         </div>
     </div>
 </c:forEach>
-
-<%-- Khu vuc in hoa don - thiet ke rieng cho in, gon va de trinh chieu/thuyet trinh --%>
-<div id="khu-vuc-in">
-    <div style="text-align:center; margin-bottom:20px;">
-        <h3 style="margin:0;">HÓA ĐƠN BÁN HÀNG</h3>
-        <div style="font-size:13px; color:#444;">Portal.BookStore</div>
-    </div>
-    <table style="width:100%; margin-bottom:16px; font-size:14px;">
-        <tr>
-            <td style="width:50%;">
-                <strong>Mã đơn hàng:</strong> #${donHang.maDH}<br>
-                <strong>Thời gian:</strong> <fmt:formatDate pattern="dd/MM/yyyy HH:mm" value="${parsedDT}" /><br>
-                <strong>Thanh toán:</strong> ${donHang.phuongThucThanhToan}
-            </td>
-            <td style="width:50%;">
-                <strong>Khách hàng:</strong> ${donHang.khachHang.tenKH}<br>
-                <strong>Nhân viên bán:</strong> ${donHang.nhanVien.tenNV}
-            </td>
-        </tr>
-    </table>
-    <table style="width:100%; border-collapse:collapse; font-size:13.5px;">
-        <thead>
-        <tr style="border-bottom:2px solid #000;">
-            <th style="text-align:left; padding:6px 4px;">Sách</th>
-            <th style="text-align:center; padding:6px 4px;">SL</th>
-            <th style="text-align:right; padding:6px 4px;">Đơn giá</th>
-            <th style="text-align:right; padding:6px 4px;">Thành tiền</th>
-        </tr>
-        </thead>
-        <tbody>
-        <c:forEach var="ct" items="${donHang.chiTietDonHangs}">
-            <tr style="border-bottom:1px solid #ddd;">
-                <td style="padding:6px 4px;">${ct.sach.tenSach}</td>
-                <td style="text-align:center; padding:6px 4px;">${ct.soLuong}</td>
-                <td style="text-align:right; padding:6px 4px;"><fmt:formatNumber value="${ct.donGia}" pattern="#,##0"/> ₫</td>
-                <td style="text-align:right; padding:6px 4px;"><fmt:formatNumber value="${ct.soLuong * ct.donGia}" pattern="#,##0"/> ₫</td>
-            </tr>
-        </c:forEach>
-        </tbody>
-        <tfoot>
-        <tr style="border-top:2px solid #000;">
-            <td colspan="3" style="text-align:right; padding:8px 4px; font-weight:bold;">TỔNG CỘNG:</td>
-            <td style="text-align:right; padding:8px 4px; font-weight:bold;"><fmt:formatNumber value="${donHang.tongTien}" pattern="#,##0"/> ₫</td>
-        </tr>
-        </tfoot>
-    </table>
-    <table style="width:100%; margin-top:50px; font-size:13.5px;">
-        <tr>
-            <td style="width:50%; text-align:center;">Khách hàng<br>(Ký, ghi rõ họ tên)</td>
-            <td style="width:50%; text-align:center;">Nhân viên bán hàng<br>(Ký, ghi rõ họ tên)</td>
-        </tr>
-    </table>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
