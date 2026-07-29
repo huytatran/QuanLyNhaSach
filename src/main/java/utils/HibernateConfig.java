@@ -18,9 +18,9 @@ public class HibernateConfig {
         Properties properties = new Properties();
         properties.put(Environment.DIALECT, "org.hibernate.dialect.SQLServerDialect");
         properties.put(Environment.DRIVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        properties.put(Environment.URL, getFromEnvOrDefault("DB_URL", "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;"));
-        properties.put(Environment.USER, getFromEnvOrDefault("DB_USER", "sa"));
-        properties.put(Environment.PASS, getFromEnvOrDefault("DB_PASS", ""));
+        properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
+        properties.put(Environment.USER, "sa");
+        properties.put(Environment.PASS, "bao11022007");
         properties.put(Environment.SHOW_SQL, "true");
 
         /*Ht272705
@@ -52,11 +52,6 @@ public class HibernateConfig {
 
     public static SessionFactory getFACTORY() {
         return FACTORY;
-    }
-
-    private static String getFromEnvOrDefault(String key, String defaultValue) {
-        String value = System.getenv(key);
-        return value != null ? value : defaultValue;
     }
 
     public static void main(String[] args) {
