@@ -200,7 +200,7 @@
                                             </option>
                                         </c:forEach>
                                     </select>
-                                    <button type="submit" name="action" value="applyVoucher" class="btn btn-outline-primary btn-sm px-3">
+                                    <button type="submit" name="action" value="applyVoucher" class="btn btn-outline-success btn-sm px-3">
                                         Áp dụng
                                     </button>
                                 </div>
