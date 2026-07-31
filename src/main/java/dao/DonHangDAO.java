@@ -50,10 +50,11 @@ public class DonHangDAO {
      * 1. Tao ban ghi DonHang
      * 2. Voi moi mon hang: Tao ChiTietDonHang + Cap nhat tung cuon SachVatLy tu 'Có sẵn' sang 'Đã bán'
      * @param gioHang map maSach -> soLuong
+     * @param soTienGiam tien giam tren don hang (co the = 0)
      * @return maDH vua tao
      */
     public int taoDonHang(Integer maKH, Integer maNV, String phuongThuc,
-                          Map<String, Integer> gioHang) {
+                          Map<String, Integer> gioHang, java.math.BigDecimal soTienGiam) {
         if (gioHang == null || gioHang.isEmpty()) {
             throw new IllegalArgumentException("Giỏ hàng trống.");
         }
@@ -76,7 +77,8 @@ public class DonHangDAO {
             dh.setPhuongThucThanhToan(phuongThuc);
             dh.setKhachHang(kh);
             dh.setNhanVien(nv);
-            dh.setSoTienGiam(BigDecimal.ZERO);
+            // Lưu số tiền giảm được áp cho đơn (không để null)
+            dh.setSoTienGiam(soTienGiam == null ? BigDecimal.ZERO : soTienGiam);
             session.persist(dh);
             session.flush(); // Day xuong DB de lay MaDH tu dong tang
 

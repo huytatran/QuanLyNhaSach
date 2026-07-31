@@ -57,7 +57,7 @@
                             </td>
                             <td>${dh.khachHang.tenKH}</td>
                             <td>${dh.nhanVien.tenNV}</td>
-                            <td class="text-end fw-bold" style="color:#4f46e5;"><fmt:formatNumber value="${dh.tongTien}" pattern="#,##0"/> ₫</td>
+                            <td class="text-end fw-bold" style="color:#4f46e5;"><fmt:formatNumber value="${dh.tongTien - dh.soTienGiam}" pattern="#,##0"/> ₫</td>
                             <td>${dh.phuongThucThanhToan}</td>
                             <td class="text-center">
                                 <c:if test="${dh.trangThai != 2}">

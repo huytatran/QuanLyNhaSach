@@ -94,7 +94,7 @@
                     <tr class="table-light">
                         <td colspan="3" class="text-end fw-bold py-3">TỔNG CỘNG:</td>
                         <td class="text-end pe-4 fw-bold py-3" style="font-size:18px; color:#4f46e5;">
-                            <fmt:formatNumber value="${donHang.tongTien}" pattern="#,##0"/> ₫
+                            <fmt:formatNumber value="${donHang.tongTien - donHang.soTienGiam}" pattern="#,##0"/> ₫
                         </td>
                     </tr>
                     </tfoot>

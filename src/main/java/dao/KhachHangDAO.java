@@ -89,6 +89,22 @@ public class KhachHangDAO {
         }
     }
 
+    /** Kiểm tra xem khách hàng đã có đơn hàng nào hay chưa (để xác định khách mới/cũ) */
+    public boolean hasOrder(Integer maKH) {
+        if (maKH == null) return false;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            Long count = session.createQuery(
+                    "SELECT COUNT(dh) FROM DonHang dh WHERE dh.khachHang.maKH = :ma",
+                    Long.class)
+                    .setParameter("ma", maKH)
+                    .uniqueResult();
+            return count != null && count > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     /**
      * Lay dia chi mac dinh (LaMacDinh = true) cua tung khach hang, dung
      * de hien nhanh trong bang danh sach ma khong can vao tung khach.

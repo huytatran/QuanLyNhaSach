@@ -152,9 +152,23 @@
                         </div>
 
                         <c:if test="${soTienGiam != null && soTienGiam > 0}">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span class="fw-semibold text-danger">Voucher giảm</span>
-                                <span class="fw-bold text-danger">-<fmt:formatNumber value="${soTienGiam}" pattern="#,##0"/> ₫</span>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-semibold text-danger">Tổng giảm</span>
+                                <span class="fw-bold text-danger">
+                                    -<fmt:formatNumber value="${soTienGiam}" pattern="#,##0"/> ₫
+                                    <c:if test="${capAmount != null}">
+                                        / <fmt:formatNumber value="${capAmount}" pattern="#,##0"/> ₫
+                                        (${currentDiscountPercent}% / ${capPercent}%)
+                                    </c:if>
+                                </span>
+                            </div>
+                        </c:if>
+                        <c:if test="${capAmount != null && empty appliedVouchers}">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-semibold text-muted">Ngưỡng giảm tối đa</span>
+                                <span class="fw-bold text-muted">
+                                    <fmt:formatNumber value="${capAmount}" pattern="#,##0"/> ₫ (${capPercent}%)
+                                </span>
                             </div>
                         </c:if>
 
@@ -178,7 +192,7 @@
                                 <select name="maKH" id="selectKhachHang" class="form-select" required style="font-size:13.5px;">
                                     <option value="">-- Chọn khách hàng --</option>
                                     <c:forEach var="kh" items="${dsKhachHang}">
-                                        <option value="${kh.maKH}">${kh.tenKH} - ${kh.sdt}</option>
+                                        <option value="${kh.maKH}" <c:if test="${kh.maKH == maKHSelected}">selected</c:if>>${kh.tenKH} - ${kh.sdt}</option>
                                     </c:forEach>
                                 </select>
                                 <%-- O tim kiem khach hang nhanh --%>
@@ -188,22 +202,74 @@
                             </div>
 
                             <%-- Ô CHỌN VOUCHER VÀ NÚT ÁP DỤNG --%>
-                            <div class="mb-2">
-                                <label class="form-label mb-1" style="font-size:12.5px;font-weight:600;color:#475569;">Voucher áp dụng</label>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label mb-0" style="font-size:12.5px;font-weight:600;color:#475569;">Voucher áp dụng</label>
+                                    <c:if test="${not empty maKHSelected}">
+                                        <c:choose>
+                                            <c:when test="${isNewCustomer}">
+                                                <span class="badge bg-success" style="font-size:11px;">Khách mới (tối đa 40%)</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="badge bg-info" style="font-size:11px;">Khách cũ (tối đa 20%)</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </c:if>
+                                </div>
+
+                                <!-- Danh sách voucher đã áp dụng -->
+                                <c:if test="${not empty appliedVouchers}">
+                                    <div class="mb-2 p-2" style="background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+                                        <p class="mb-1" style="font-size:11.5px; color:#64748b; font-weight:600;">Voucher đã áp:</p>
+                                        <c:forEach var="maCode" items="${appliedVouchers}">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span style="font-size:12px;">${maCode}</span>
+                                                <!-- Use JS to submit removal to avoid nested forms inside the main checkout form -->
+                                                <button type="button" onclick="submitRemoveAppliedVoucher('${maCode}')" class="btn btn-sm btn-link p-0 text-danger" style="font-size:11px; text-decoration:none;">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </div>
+                                        </c:forEach>
+                                    </div>
+                                </c:if>
+
                                 <div class="d-flex gap-2">
-                                    <select name="maCode" class="form-select" style="font-size:13.5px;">
+                                    <select id="selectVoucher" name="maCode" class="form-select" style="font-size:13.5px;"
+                                            <c:if test="${appliedVouchers.size() >= 2}">disabled</c:if>>
                                         <option value="">-- Chọn mã voucher --</option>
                                         <c:forEach var="v" items="${dsVoucher}">
-                                            <!-- Dùng EL để giữ trạng thái mã đang được chọn -->
-                                            <option value="${v.maCode}" ${v.maCode == maVoucherApDung ? 'selected' : ''}>
-                                                    ${v.maCode} - Giảm ${v.loaiGiam == 1 ? v.giaTri.intValue() += '%' : v.giaTri.intValue() += 'đ'} (Đơn từ ${v.giaTriDonToiThieu.intValue()}đ)
+                                            <c:set var="isAlreadyApplied" value="${appliedVouchers.contains(v.maCode)}" />
+                                            <option value="${v.maCode}"
+                                                    <c:if test="${isAlreadyApplied}">disabled</c:if>
+                                                    data-giamgia="${v.loaiGiam == 1 ? v.giaTri : 0}"
+                                                    data-tien="${v.loaiGiam == 2 ? v.giaTri : 0}">
+                                                ${v.maCode} - Giảm ${v.loaiGiam == 1 ? v.giaTri.intValue() : 0}% / ${v.loaiGiam == 2 ? v.giaTri.intValue() : 0}đ (Đơn từ ${v.giaTriDonToiThieu.intValue()}đ)
                                             </option>
                                         </c:forEach>
                                     </select>
-                                    <button type="submit" name="action" value="applyVoucher" class="btn btn-outline-primary btn-sm px-3">
+                                    <button type="button" onclick="applyVoucherSingle()" class="btn btn-outline-primary btn-sm px-3"
+                                            <c:if test="${appliedVouchers.size() >= 2}">disabled</c:if>>
                                         Áp dụng
                                     </button>
+                                    <c:if test="${not empty appliedVouchers}">
+                                        <!-- Use JS to submit cancel-all to avoid nested form issues -->
+                                        <button type="button" onclick="submitCancelAllVouchers()" class="btn btn-outline-danger btn-sm px-3">
+                                            Hủy tất cả
+                                        </button>
+                                    </c:if>
                                 </div>
+
+                                <!-- Debug info: Hiển thị số lượng vouchers đã áp và tổng giảm -->
+                                <c:if test="${appliedVouchers.size() > 0 && soTienGiam <= 0}">
+                                    <div class="alert alert-warning mt-2 mb-0 p-2" style="font-size:12px;">
+                                        <i class="bi bi-exclamation-triangle"></i> Lưu ý: Đã áp ${appliedVouchers.size()} voucher nhưng tổng giảm = 0 (có thể do không đạt điều kiện min-order). Vui lòng kiểm tra lại.
+                                    </div>
+                                </c:if>
+                                <c:if test="${appliedVouchers.size() >= 2}">
+                                    <div class="alert alert-info mt-2 mb-0 p-2" style="font-size:12px;">
+                                        <i class="bi bi-info-circle"></i> Đã áp tối đa 2 vouchers. Để áp thêm, vui lòng hủy một voucher.
+                                    </div>
+                                </c:if>
                             </div>
 
                             <div class="mb-3">
@@ -270,6 +336,56 @@
         });
     });
 
+    // Submit removal of a single applied voucher via JS to avoid nested form markup
+    function submitRemoveAppliedVoucher(maCode) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '${pageContext.request.contextPath}/pos';
+
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'removeAppliedVoucher';
+
+        const maCodeInput = document.createElement('input');
+        maCodeInput.type = 'hidden';
+        maCodeInput.name = 'maCode';
+        maCodeInput.value = maCode;
+
+        const maKHInput = document.createElement('input');
+        maKHInput.type = 'hidden';
+        maKHInput.name = 'maKH';
+        maKHInput.value = document.getElementById('selectKhachHang').value;
+
+        form.appendChild(actionInput);
+        form.appendChild(maCodeInput);
+        form.appendChild(maKHInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Submit cancel all vouchers via JS
+    function submitCancelAllVouchers() {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '${pageContext.request.contextPath}/pos';
+
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'cancelAllVouchers';
+
+        const maKHInput = document.createElement('input');
+        maKHInput.type = 'hidden';
+        maKHInput.name = 'maKH';
+        maKHInput.value = document.getElementById('selectKhachHang').value;
+
+        form.appendChild(actionInput);
+        form.appendChild(maKHInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     // Logic: Gui AJAX de them khach hang moi va tu dong chon
     function ajaxThemKH() {
         const ten = document.getElementById('newTenKH').value;
@@ -308,6 +424,64 @@
                 document.getElementById('newSdtKH').value = '';
             })
             .catch(err => alert('Lỗi: ' + err));
+    }
+
+    // Đính kèm maKH vào mọi form POST (trừ AJAX) trước khi submit
+    document.querySelectorAll('form').forEach(function(form) {
+        try {
+            if ((form.method || '').toLowerCase() === 'post') {
+                const actionInp = form.querySelector('input[name="action"]');
+                if (actionInp && actionInp.value !== 'addKH') {
+                    form.addEventListener('submit', function(e) {
+                        let hidden = form.querySelector('input[name="maKH"][type="hidden"]');
+                        if (!hidden) {
+                            hidden = document.createElement('input');
+                            hidden.type = 'hidden';
+                            hidden.name = 'maKH';
+                            form.appendChild(hidden);
+                        }
+                        hidden.value = selectKH.value;
+                    });
+                }
+            }
+        } catch (e) { /* ignore forms we cannot access */ }
+    });
+
+    // Áp dụng voucher đơn
+    function applyVoucherSingle() {
+        const selectVoucher = document.getElementById('selectVoucher');
+        const maCode = selectVoucher.value;
+
+        if (!maCode) {
+            alert('Vui lòng chọn voucher');
+            return;
+        }
+
+        // Gửi form POST tới servlet để áp voucher
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '${pageContext.request.contextPath}/pos';
+
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'applyVoucherSingle';
+
+        const maCodeInput = document.createElement('input');
+        maCodeInput.type = 'hidden';
+        maCodeInput.name = 'maCode';
+        maCodeInput.value = maCode;
+
+        const maKHInput = document.createElement('input');
+        maKHInput.type = 'hidden';
+        maKHInput.name = 'maKH';
+        maKHInput.value = document.getElementById('selectKhachHang').value;
+
+        form.appendChild(actionInput);
+        form.appendChild(maCodeInput);
+        form.appendChild(maKHInput);
+        document.body.appendChild(form);
+        form.submit();
     }
 </script>
 </body>

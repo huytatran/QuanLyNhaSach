@@ -6,6 +6,7 @@ import dao.SachDAO;
 import entity.KhachHang;
 import entity.NhanVien;
 import entity.Sach;
+import entity.Voucher;
 import repository.VoucherRepo;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
@@ -49,16 +51,41 @@ public class PosServlet extends HttpServlet {
         request.setAttribute("danhSachSach", danhSach);
         request.setAttribute("tonKhoMap", tonKho);
         request.setAttribute("dsKhachHang", khachHangDAO.getAll());
-        request.setAttribute("dsVoucher", voucherRepo.getVouchersHopLe());
+
+        // Lấy danh sách voucher hợp lệ
+        List<Voucher> dsVoucher = voucherRepo.getVouchersHopLe();
+
+        // Lọc voucher theo loại khách (mới/cũ) nếu có khách được chọn
+        Integer maKHSelected = (Integer) session.getAttribute("maKHSelected");
+        boolean isNewCustomer = false;
+        if (maKHSelected != null) {
+            isNewCustomer = !khachHangDAO.hasOrder(maKHSelected);
+            dsVoucher = filterVouchersForCustomerType(dsVoucher, isNewCustomer);
+        }
+
+        request.setAttribute("dsVoucher", dsVoucher);
+        request.setAttribute("isNewCustomer", isNewCustomer);
+        request.setAttribute("maKHSelected", maKHSelected);
         request.setAttribute("chiTietGio", buildChiTietGio(gioHang, tonKho));
 
         // ------------------ LOGIC TÍNH TIỀN CÓ VOUCHER ------------------
         BigDecimal tongTienGio = tinhTong(gioHang);
         BigDecimal soTienGiam = BigDecimal.ZERO;
 
-        String maVoucherApDung = (String) session.getAttribute("maVoucherApDung");
-        if (maVoucherApDung != null && !maVoucherApDung.isBlank()) {
-            soTienGiam = voucherRepo.tinhTienGiamGia(maVoucherApDung, tongTienGio);
+        // Lấy danh sách vouchers đã áp từ session
+        @SuppressWarnings("unchecked")
+        List<String> appliedVouchers = (List<String>) session.getAttribute("appliedVouchers");
+        if (appliedVouchers == null) {
+            appliedVouchers = new ArrayList<>();
+            session.setAttribute("appliedVouchers", appliedVouchers);
+        }
+        
+        // Tính tổng tiền giảm từ tất cả vouchers áp dụng (mỗi % tính trên tổng gốc)
+        for (String maCode : appliedVouchers) {
+            if (maCode != null && !maCode.isBlank()) {
+                BigDecimal discount = voucherRepo.tinhTienGiamGia(maCode, tongTienGio);
+                soTienGiam = soTienGiam.add(discount);
+            }
         }
 
         BigDecimal tongTienPhaiTra = tongTienGio.subtract(soTienGiam);
@@ -66,10 +93,20 @@ public class PosServlet extends HttpServlet {
             tongTienPhaiTra = BigDecimal.ZERO;
         }
 
+        // Tính cap dựa trên loại khách
+        BigDecimal capPercent = isNewCustomer ? new BigDecimal("0.4") : new BigDecimal("0.2");
+        BigDecimal capAmount = tongTienGio.multiply(capPercent);
+        BigDecimal currentDiscountPercent = tongTienGio.compareTo(BigDecimal.ZERO) > 0
+            ? soTienGiam.divide(tongTienGio, 2, java.math.RoundingMode.HALF_UP)
+            : BigDecimal.ZERO;
+
         request.setAttribute("tongTienGio", tongTienGio);
         request.setAttribute("soTienGiam", soTienGiam);
         request.setAttribute("tongTienPhaiTra", tongTienPhaiTra);
-        request.setAttribute("maVoucherApDung", maVoucherApDung);
+        request.setAttribute("appliedVouchers", appliedVouchers);
+        request.setAttribute("capPercent", capPercent.multiply(new BigDecimal("100")).intValue());
+        request.setAttribute("capAmount", capAmount);
+        request.setAttribute("currentDiscountPercent", currentDiscountPercent.multiply(new BigDecimal("100")).intValue());
         // ----------------------------------------------------------------
 
         request.setAttribute("tuKhoa", q);
@@ -86,6 +123,14 @@ public class PosServlet extends HttpServlet {
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
         Map<String, Integer> gioHang = (Map<String, Integer>) session.getAttribute("gioHang");
+
+        // Lưu maKH được chọn vào session (nếu form gửi kèm) để giữ selection across redirects
+        String maKHParam = request.getParameter("maKH");
+        if (maKHParam != null && !maKHParam.isBlank()) {
+            try {
+                session.setAttribute("maKHSelected", Integer.valueOf(maKHParam));
+            } catch (NumberFormatException ignored) { }
+        }
 
         if ("addKH".equals(action)) {
             String ten = request.getParameter("tenKH");
@@ -149,18 +194,113 @@ public class PosServlet extends HttpServlet {
 
         if ("clear".equals(action)) {
             gioHang.clear();
-            session.removeAttribute("maVoucherApDung");
+            session.removeAttribute("appliedVouchers");
+            response.sendRedirect(request.getContextPath() + "/pos");
+            return;
+        }
+
+        if ("applyVoucherSingle".equals(action)) {
+            String maCode = request.getParameter("maCode");
+
+            if (maCode != null && !maCode.isBlank()) {
+                @SuppressWarnings("unchecked")
+                List<String> appliedVouchers = (List<String>) session.getAttribute("appliedVouchers");
+                if (appliedVouchers == null) {
+                    appliedVouchers = new ArrayList<>();
+                    session.setAttribute("appliedVouchers", appliedVouchers);
+                }
+
+                // Kiểm tra tối đa 2 vouchers
+                if (appliedVouchers.size() >= 2) {
+                    response.sendRedirect(request.getContextPath() + "/pos?loi=" +
+                            java.net.URLEncoder.encode("Tối đa chỉ được áp 2 vouchers cùng lúc", "UTF-8"));
+                    return;
+                }
+
+                // Kiểm tra voucher đã được áp hay chưa
+                if (appliedVouchers.contains(maCode.trim())) {
+                    response.sendRedirect(request.getContextPath() + "/pos?loi=" +
+                            java.net.URLEncoder.encode("Voucher này đã được áp dụng rồi", "UTF-8"));
+                    return;
+                }
+
+                // Kiểm tra cap trước khi áp
+                BigDecimal tongTien = tinhTong(gioHang);
+                if (tongTien.compareTo(BigDecimal.ZERO) <= 0) {
+                    response.sendRedirect(request.getContextPath() + "/pos?loi=" +
+                            java.net.URLEncoder.encode("Giỏ hàng rỗng, không thể áp voucher", "UTF-8"));
+                    return;
+                }
+
+                BigDecimal currentTotal = BigDecimal.ZERO;
+                for (String ma : appliedVouchers) {
+                    currentTotal = currentTotal.add(voucherRepo.tinhTienGiamGia(ma, tongTien));
+                }
+
+                BigDecimal newDiscount = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
+
+                // Kiểm tra voucher hợp lệ
+                if (newDiscount.compareTo(BigDecimal.ZERO) <= 0) {
+                    response.sendRedirect(request.getContextPath() + "/pos?loi=" +
+                            java.net.URLEncoder.encode("Voucher này không áp dụng được (có thể hết lượt hoặc không đạt điều kiện)", "UTF-8"));
+                    return;
+                }
+
+                BigDecimal totalWithNew = currentTotal.add(newDiscount);
+
+                Integer maKHSelected = (Integer) session.getAttribute("maKHSelected");
+                boolean isNewCustomer = (maKHSelected != null) && !khachHangDAO.hasOrder(maKHSelected);
+                BigDecimal capPercent = isNewCustomer ? new BigDecimal("0.4") : new BigDecimal("0.2");
+                BigDecimal capAmount = tongTien.multiply(capPercent);
+
+                if (totalWithNew.compareTo(capAmount) > 0) {
+                    response.sendRedirect(request.getContextPath() + "/pos?loi=" +
+                            java.net.URLEncoder.encode("Áp voucher này sẽ vượt ngưỡng giảm giá (" + capPercent.multiply(new BigDecimal("100")).intValue() + "%)", "UTF-8"));
+                    return;
+                }
+
+                appliedVouchers.add(maCode.trim());
+            }
+
+            response.sendRedirect(request.getContextPath() + "/pos");
+            return;
+        }
+
+        if ("removeAppliedVoucher".equals(action)) {
+            String maCode = request.getParameter("maCode");
+            if (maCode != null && !maCode.isBlank()) {
+                @SuppressWarnings("unchecked")
+                List<String> appliedVouchers = (List<String>) session.getAttribute("appliedVouchers");
+                if (appliedVouchers != null) {
+                    appliedVouchers.remove(maCode.trim());
+                }
+            }
+            response.sendRedirect(request.getContextPath() + "/pos");
+            return;
+        }
+
+        if ("cancelAllVouchers".equals(action)) {
+            session.removeAttribute("appliedVouchers");
             response.sendRedirect(request.getContextPath() + "/pos");
             return;
         }
 
         if ("applyVoucher".equals(action)) {
             String maCode = request.getParameter("maCode");
+            String maCode2 = request.getParameter("maCode2");
+
             if (maCode != null && !maCode.isBlank()) {
                 session.setAttribute("maVoucherApDung", maCode);
             } else {
                 session.removeAttribute("maVoucherApDung");
             }
+
+            if (maCode2 != null && !maCode2.isBlank()) {
+                session.setAttribute("maVoucherApDung2", maCode2);
+            } else {
+                session.removeAttribute("maVoucherApDung2");
+            }
+
             response.sendRedirect(request.getContextPath() + "/pos");
             return;
         }
@@ -168,7 +308,6 @@ public class PosServlet extends HttpServlet {
         if ("checkout".equals(action)) {
             String maKHStr = request.getParameter("maKH");
             String pttt = request.getParameter("phuongThuc");
-            String maCode = request.getParameter("maCode");
 
             if (maKHStr == null || maKHStr.isBlank()) {
                 response.sendRedirect(request.getContextPath() + "/pos?loi=" +
@@ -183,12 +322,21 @@ public class PosServlet extends HttpServlet {
 
             NhanVien nv = (NhanVien) session.getAttribute("currentUser");
             try {
-                if (maCode != null && !maCode.isBlank()) {
-                    BigDecimal tongTien = tinhTong(gioHang);
-                    BigDecimal soTienGiam = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
+                BigDecimal tongTien = tinhTong(gioHang);
+                BigDecimal soTienGiam = BigDecimal.ZERO;
 
-                    if (soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
-                        voucherRepo.tangLuotSuDung(maCode.trim());
+                // Tính giảm từ tất cả vouchers áp dụng (% trên tổng gốc)
+                @SuppressWarnings("unchecked")
+                List<String> appliedVouchers = (List<String>) session.getAttribute("appliedVouchers");
+                if (appliedVouchers != null) {
+                    for (String maCode : appliedVouchers) {
+                        if (maCode != null && !maCode.isBlank()) {
+                            BigDecimal discount = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
+                            if (discount.compareTo(BigDecimal.ZERO) > 0) {
+                                soTienGiam = soTienGiam.add(discount);
+                                voucherRepo.tangLuotSuDung(maCode.trim());
+                            }
+                        }
                     }
                 }
 
@@ -196,10 +344,11 @@ public class PosServlet extends HttpServlet {
                         Integer.valueOf(maKHStr),
                         nv.getMaNV(),
                         (pttt == null || pttt.isBlank()) ? "Tiền mặt" : pttt,
-                        new LinkedHashMap<>(gioHang));
+                        new LinkedHashMap<>(gioHang),
+                        soTienGiam);
 
                 gioHang.clear();
-                session.removeAttribute("maVoucherApDung");
+                session.removeAttribute("appliedVouchers");
 
                 response.sendRedirect(request.getContextPath() + "/pos?thanhCong=" + maDH);
             } catch (Exception e) {
@@ -244,5 +393,26 @@ public class PosServlet extends HttpServlet {
     private int parseInt(String s, int def) {
         try { return Integer.parseInt(s.trim()); }
         catch (Exception e) { return def; }
+    }
+
+    /**
+     * Lọc danh sách voucher theo loại khách hàng
+     * - Khách mới: loại bỏ voucher chứa từ "MEMBER"
+     * - Khách cũ: loại bỏ voucher chứa từ "WELCOME"
+     */
+    private List<Voucher> filterVouchersForCustomerType(List<Voucher> vouchers, boolean isNewCustomer) {
+        if (vouchers == null) return vouchers;
+        return vouchers.stream()
+                .filter(v -> {
+                    String code = v.getMaCode().toUpperCase();
+                    if (isNewCustomer) {
+                        // Khách mới: không hiển thị voucher chứa "MEMBER"
+                        return !code.contains("MEMBER");
+                    } else {
+                        // Khách cũ: không hiển thị voucher chứa "WELCOME"
+                        return !code.contains("WELCOME");
+                    }
+                })
+                .collect(Collectors.toList());
     }
 }
