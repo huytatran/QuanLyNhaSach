@@ -22,11 +22,33 @@ public class DonHangDAO {
     public List<DonHang> getAll() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                    "SELECT DISTINCT dh FROM DonHang dh " +
-                    "LEFT JOIN FETCH dh.khachHang " +
-                    "LEFT JOIN FETCH dh.nhanVien " +
-                    "ORDER BY dh.ngayLap DESC", DonHang.class)
+                            "SELECT DISTINCT dh FROM DonHang dh " +
+                                    "LEFT JOIN FETCH dh.khachHang " +
+                                    "LEFT JOIN FETCH dh.nhanVien " +
+                                    "ORDER BY dh.ngayLap DESC", DonHang.class)
                     .getResultList();
+        }
+    }
+
+    /** Moi: ban co phan trang cho trang danh sach don hang. Trang bat dau tu 1. */
+    public List<DonHang> getAll(int trang, int soDongMoiTrang) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.createQuery(
+                            "SELECT DISTINCT dh FROM DonHang dh " +
+                                    "LEFT JOIN FETCH dh.khachHang " +
+                                    "LEFT JOIN FETCH dh.nhanVien " +
+                                    "ORDER BY dh.ngayLap DESC", DonHang.class)
+                    .setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    /** Moi: tong so don hang, dung de tinh so trang. */
+    public long countAll() {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            Long c = session.createQuery("SELECT COUNT(dh) FROM DonHang dh", Long.class).uniqueResult();
+            return c == null ? 0 : c;
         }
     }
 
@@ -34,12 +56,12 @@ public class DonHangDAO {
     public DonHang getById(Integer maDH) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                    "SELECT dh FROM DonHang dh " +
-                    "LEFT JOIN FETCH dh.khachHang " +
-                    "LEFT JOIN FETCH dh.nhanVien " +
-                    "LEFT JOIN FETCH dh.chiTietDonHangs ct " +
-                    "LEFT JOIN FETCH ct.sach " +
-                    "WHERE dh.maDH = :ma", DonHang.class)
+                            "SELECT dh FROM DonHang dh " +
+                                    "LEFT JOIN FETCH dh.khachHang " +
+                                    "LEFT JOIN FETCH dh.nhanVien " +
+                                    "LEFT JOIN FETCH dh.chiTietDonHangs ct " +
+                                    "LEFT JOIN FETCH ct.sach " +
+                                    "WHERE dh.maDH = :ma", DonHang.class)
                     .setParameter("ma", maDH)
                     .uniqueResult();
         }
@@ -72,7 +94,7 @@ public class DonHangDAO {
             // Khoi tao doi tuong DonHang moi
             DonHang dh = new DonHang();
             dh.setNgayLap(LocalDateTime.now());
-            dh.setTongTien(BigDecimal.ZERO); 
+            dh.setTongTien(BigDecimal.ZERO);
             dh.setTrangThai(TRANG_THAI_DA_GIAO); // Mac dinh 1 la Da giao
             dh.setPhuongThucThanhToan(phuongThuc);
             dh.setKhachHang(kh);
@@ -116,7 +138,7 @@ public class DonHangDAO {
                 ct.setSoLuong(soLuong);
                 ct.setDonGia(sach.getGiaBan() != null ? sach.getGiaBan() : BigDecimal.ZERO);
                 session.persist(ct);
-                session.flush(); 
+                session.flush();
 
                 // Tinh luy ke tong tien don hang
                 tong = tong.add(ct.getDonGia().multiply(BigDecimal.valueOf(soLuong)));

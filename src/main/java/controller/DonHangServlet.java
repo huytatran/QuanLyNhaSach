@@ -19,12 +19,15 @@ public class DonHangServlet extends HttpServlet {
     private final DonHangDAO donHangDAO = new DonHangDAO();
     private final SachDAO sachDAO = new SachDAO();
 
+    // Moi: so don hang hien thi moi trang
+    private static final int SO_DONG_MOI_TRANG = 10;
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
-        
+
         if ("view".equals(action)) {
             Integer ma = Integer.valueOf(request.getParameter("ma"));
             DonHang dh = donHangDAO.getById(ma);
@@ -37,7 +40,23 @@ public class DonHangServlet extends HttpServlet {
             return;
         }
 
-        request.setAttribute("danhSachDonHang", donHangDAO.getAll());
+        // Moi: phan trang cho danh sach don hang
+        int trang = 1;
+        try {
+            if (request.getParameter("trang") != null) {
+                trang = Integer.parseInt(request.getParameter("trang"));
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        if (trang < 1) trang = 1;
+
+        long tongSoDon = donHangDAO.countAll();
+        int tongSoTrang = (int) Math.max(1, Math.ceil(tongSoDon / (double) SO_DONG_MOI_TRANG));
+        if (trang > tongSoTrang) trang = tongSoTrang;
+
+        request.setAttribute("danhSachDonHang", donHangDAO.getAll(trang, SO_DONG_MOI_TRANG));
+        request.setAttribute("trangHienTai", trang);
+        request.setAttribute("tongSoTrang", tongSoTrang);
         request.setAttribute("activeMenu", "donhang");
         request.getRequestDispatcher("/view/don-hang.jsp").forward(request, response);
     }
@@ -80,7 +99,7 @@ public class DonHangServlet extends HttpServlet {
     }
 
     private void redirectWithMessage(HttpServletRequest request, HttpServletResponse response, Integer maDH,
-                                      String message) throws IOException {
+                                     String message) throws IOException {
         if (maDH == null) {
             response.sendRedirect(request.getContextPath() + "/don-hang?message=" +
                     URLEncoder.encode(message, StandardCharsets.UTF_8));
@@ -93,7 +112,7 @@ public class DonHangServlet extends HttpServlet {
     // Moi: sau khi tra/doi thanh cong, redirect ve trang chi tiet kem du lieu de tu dong mo phieu in
     // (khong luu phieu vao DB - chi truyen qua tham so de trang JSP dung JS render + in ngay).
     private void redirectPhieuInDoiTra(HttpServletRequest request, HttpServletResponse response, Integer maDH,
-                                        String loai, String tenSach, int soLuong, String maSachMoi)
+                                       String loai, String tenSach, int soLuong, String maSachMoi)
             throws IOException {
         String msg = "TRA".equals(loai)
                 ? "Đã trả " + soLuong + " cuốn \"" + tenSach + "\" và hoàn lại tồn kho."
