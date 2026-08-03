@@ -115,4 +115,39 @@ public class ThongKeDAO {
                     .getResultList();
         }
     }
+
+    /** Top 5 sach ban chay trong 7 ngay gan nhat - dung cho Dashboard. */
+    public List<Object[]> topSachBanChay7Ngay(int limit) {
+        LocalDateTime start = LocalDate.now().minusDays(6).atStartOfDay();
+        LocalDateTime end = LocalDate.now().plusDays(1).atStartOfDay();
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.createQuery(
+                            "SELECT s.tenSach, SUM(ct.soLuong) "
+                                    + "FROM ChiTietDonHang ct JOIN ct.sach s JOIN ct.donHang dh "
+                                    + "WHERE dh.trangThai <> 2 AND dh.ngayLap >= :start AND dh.ngayLap < :end "
+                                    + "GROUP BY s.maSach, s.tenSach "
+                                    + "ORDER BY SUM(ct.soLuong) DESC",
+                            Object[].class)
+                    .setParameter("start", start)
+                    .setParameter("end", end)
+                    .setMaxResults(limit)
+                    .getResultList();
+        }
+    }
+
+    /** Doanh thu 7 ngay gan nhat - dung cho Dashboard. */
+    public BigDecimal doanhThu7Ngay() {
+        LocalDateTime start = LocalDate.now().minusDays(6).atStartOfDay();
+        LocalDateTime end = LocalDate.now().plusDays(1).atStartOfDay();
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            Object result = session.createQuery(
+                            "SELECT COALESCE(SUM(dh.tongTien), 0) FROM DonHang dh "
+                                    + "WHERE dh.trangThai <> 2 AND dh.ngayLap >= :start AND dh.ngayLap < :end",
+                            Object.class)
+                    .setParameter("start", start)
+                    .setParameter("end", end)
+                    .uniqueResult();
+            return result instanceof BigDecimal ? (BigDecimal) result : BigDecimal.ZERO;
+        }
+    }
 }
