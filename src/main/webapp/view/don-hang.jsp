@@ -63,7 +63,7 @@
                                     <%-- Moi: tra/doi tung mon duoc thuc hien trong trang chi tiet don hang --%>
                                 <a href="${pageContext.request.contextPath}/don-hang?action=view&ma=${dh.maDH}"
                                    class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">
-                                    <i class="bi bi-eye me-1"></i> Chi tiết / Trả, đổi
+                                    <i class="bi bi-eye me-1"></i> Chi tiết
                                 </a>
                             </td>
                         </tr>
