@@ -26,8 +26,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="p-4 bg-white rounded-3 shadow-sm border" style="border-color:#e2e8f0; border-left:4px solid #4f46e5 !important;">
-                    <h4 class="fw-bold" style="color:#0f172a;">Xin chào, ${sessionScope.currentUser.tenNV}</h4>
-                    <p class="text-muted mb-0" style="font-size:14px;">Dữ liệu dưới đây lấy trực tiếp từ database QuanLyNhaSach.</p>
+                    <h4 class="fw-bold mb-0" style="color:#0f172a;">Xin chào, ${sessionScope.currentUser.tenNV}</h4>
                 </div>
             </div>
         </div>
