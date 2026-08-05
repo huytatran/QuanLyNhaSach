@@ -1,15 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Context>
-    <!--
-        Serve thư mục ảnh bìa ngoài webapp qua URL /book-images/
-        Ảnh lưu tại: D:/DoAn_NhomDuAn1/uploads/books/
-        Truy cập:    http://localhost:8080/<app>/book-images/S001.jpg
-    -->
-    <Resources>
-        <PostResources
-            className="org.apache.catalina.webresources.DirResourceSet"
-            base="D:/DoAn_NhomDuAn1/uploads/books"
-            webAppMount="/book-images"
-            internalPath="/" />
-    </Resources>
-</Context>
+

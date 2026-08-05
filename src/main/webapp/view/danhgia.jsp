@@ -32,7 +32,6 @@
 
 <div class="content-wrapper">
     <div class="mb-4">
-        <span class="text-uppercase" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">NV4 - Mở rộng</span>
         <h3 class="fw-bold mt-1" style="color: #0f172a;"><i class="bi bi-star-half me-2" style="color: #4f46e5;"></i> Đánh giá sách</h3>
         <p class="text-muted mb-0" style="font-size: 14px;">Ghi nhận điểm và nhận xét của khách cho từng đầu sách sau khi mua.</p>
     </div>

@@ -26,7 +26,7 @@
 
         <c:if test="${not empty param.message}">
             <div class="alert alert-info alert-dismissible fade show" role="alert">
-                ${param.message}
+                    ${param.message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         </c:if>
@@ -51,7 +51,7 @@
                         <tr>
                             <td class="ps-3 fw-semibold">#${dh.maDH}</td>
                             <td>
-                                <%-- Dinh dang hien thi ngay gio --%>
+                                    <%-- Dinh dang hien thi ngay gio --%>
                                 <fmt:parseDate value="${dh.ngayLap}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedDateTime" type="both" />
                                 <fmt:formatDate pattern="dd/MM/yyyy HH:mm" value="${parsedDateTime}" />
                             </td>
@@ -60,17 +60,7 @@
                             <td class="text-end fw-bold" style="color:#4f46e5;"><fmt:formatNumber value="${dh.tongTien - dh.soTienGiam}" pattern="#,##0"/> ₫</td>
                             <td>${dh.phuongThucThanhToan}</td>
                             <td class="text-center">
-                                <c:if test="${dh.trangThai != 2}">
-                                    <form method="post" action="${pageContext.request.contextPath}/don-hang" class="d-inline"
-                                          onsubmit="return confirm('Xác nhận đổi/trả toàn bộ đơn #${dh.maDH}? Sách sẽ được hoàn lại tồn kho.');">
-                                        <input type="hidden" name="action" value="return">
-                                        <input type="hidden" name="ma" value="${dh.maDH}">
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" style="border-radius:6px;">
-                                            <i class="bi bi-arrow-return-left me-1"></i> Đổi/trả
-                                        </button>
-                                    </form>
-                                </c:if>
-                                <%-- Link xem chi tiet don hang --%>
+                                    <%-- Moi: tra/doi tung mon duoc thuc hien trong trang chi tiet don hang --%>
                                 <a href="${pageContext.request.contextPath}/don-hang?action=view&ma=${dh.maDH}"
                                    class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">
                                     <i class="bi bi-eye me-1"></i> Chi tiết
@@ -87,6 +77,25 @@
                 </table>
             </div>
         </div>
+
+        <%-- Moi: phan trang cho danh sach don hang --%>
+        <c:if test="${tongSoTrang > 1}">
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    <li class="page-item ${trangHienTai <= 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="${pageContext.request.contextPath}/don-hang?trang=${trangHienTai - 1}">Trước</a>
+                    </li>
+                    <c:forEach var="i" begin="1" end="${tongSoTrang}">
+                        <li class="page-item ${i == trangHienTai ? 'active' : ''}">
+                            <a class="page-link" href="${pageContext.request.contextPath}/don-hang?trang=${i}">${i}</a>
+                        </li>
+                    </c:forEach>
+                    <li class="page-item ${trangHienTai >= tongSoTrang ? 'disabled' : ''}">
+                        <a class="page-link" href="${pageContext.request.contextPath}/don-hang?trang=${trangHienTai + 1}">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </c:if>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
