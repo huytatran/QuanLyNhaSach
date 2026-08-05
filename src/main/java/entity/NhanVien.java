@@ -37,4 +37,8 @@ public class NhanVien {
     @Column(name = "TrangThai")
     private Boolean trangThai;
 
+    // Bổ sung thêm trường Ca làm việc
+    @Column(name = "CaLamViec", columnDefinition = "NVARCHAR(100)")
+    private String caLamViec;
+
 }
