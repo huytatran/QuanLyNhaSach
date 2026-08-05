@@ -51,13 +51,11 @@
                         <tr>
                             <td class="ps-3 fw-semibold">#${dh.maDH}</td>
                             <td>
-                                    <%-- Dinh dang hien thi ngay gio --%>
-                                <fmt:parseDate value="${dh.ngayLap}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedDateTime" type="both" />
-                                <fmt:formatDate pattern="dd/MM/yyyy HH:mm" value="${parsedDateTime}" />
+                                ${dh.ngayLap}
                             </td>
                             <td>${dh.khachHang.tenKH}</td>
                             <td>${dh.nhanVien.tenNV}</td>
-                            <td class="text-end fw-bold" style="color:#4f46e5;"><fmt:formatNumber value="${dh.tongTien - dh.soTienGiam}" pattern="#,##0"/> ₫</td>
+                            <td class="text-end fw-bold" style="color:#4f46e5;"><fmt:formatNumber value="${dh.tongTien}" pattern="#,##0"/> ₫</td>
                             <td>${dh.phuongThucThanhToan}</td>
                             <td class="text-center">
                                     <%-- Moi: tra/doi tung mon duoc thuc hien trong trang chi tiet don hang --%>

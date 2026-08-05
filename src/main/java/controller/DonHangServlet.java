@@ -50,6 +50,19 @@ public class DonHangServlet extends HttpServlet {
         }
         if (trang < 1) trang = 1;
 
+        String tab = request.getParameter("tab");
+
+        if ("doi-tra".equals(tab)) {
+            // Tab Đổi/Trả: chỉ hiện đơn đã giao (trangThai=1) còn cuốn chưa trả
+            request.setAttribute("danhSachDonHang", donHangDAO.getAllCoTheDoiTra(trang, SO_DONG_MOI_TRANG));
+            request.setAttribute("tongSoTrang", (int) Math.max(1, Math.ceil(donHangDAO.countCoTheDoiTra() / (double) SO_DONG_MOI_TRANG)));
+            request.setAttribute("trangHienTai", trang);
+            request.setAttribute("tab", "doi-tra");
+            request.setAttribute("activeMenu", "doitra");
+            request.getRequestDispatcher("/view/don-hang.jsp").forward(request, response);
+            return;
+        }
+
         long tongSoDon = donHangDAO.countAll();
         int tongSoTrang = (int) Math.max(1, Math.ceil(tongSoDon / (double) SO_DONG_MOI_TRANG));
         if (trang > tongSoTrang) trang = tongSoTrang;
@@ -57,6 +70,7 @@ public class DonHangServlet extends HttpServlet {
         request.setAttribute("danhSachDonHang", donHangDAO.getAll(trang, SO_DONG_MOI_TRANG));
         request.setAttribute("trangHienTai", trang);
         request.setAttribute("tongSoTrang", tongSoTrang);
+        request.setAttribute("tab", "don-hang");
         request.setAttribute("activeMenu", "donhang");
         request.getRequestDispatcher("/view/don-hang.jsp").forward(request, response);
     }

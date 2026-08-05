@@ -52,6 +52,47 @@ public class DonHangDAO {
         }
     }
 
+    /** Đơn đã giao (trangThai=1) còn cuốn chưa trả — dùng cho tab Đổi/Trả. */
+    public List<DonHang> getAllCoTheDoiTra(int trang, int soDongMoiTrang) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            // Lấy maDH của các đơn còn SachVatLy trạng thái 'Đã bán'
+            List<Integer> maDHList = session.createQuery(
+                    "SELECT DISTINCT sv.chiTietDonHang.donHang.maDH FROM SachVatLy sv " +
+                    "WHERE sv.trangThai = :tt",
+                    Integer.class)
+                    .setParameter("tt", DA_BAN)
+                    .getResultList();
+
+            if (maDHList.isEmpty()) return java.util.Collections.emptyList();
+
+            return session.createQuery(
+                    "SELECT DISTINCT dh FROM DonHang dh " +
+                    "LEFT JOIN FETCH dh.khachHang " +
+                    "LEFT JOIN FETCH dh.nhanVien " +
+                    "WHERE dh.maDH IN :ids AND dh.trangThai = :tt " +
+                    "ORDER BY dh.ngayLap DESC", DonHang.class)
+                    .setParameter("ids", maDHList)
+                    .setParameter("tt", TRANG_THAI_DA_GIAO)
+                    .setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    /** Đếm số đơn có thể đổi/trả — dùng để tính phân trang. */
+    public long countCoTheDoiTra() {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            Long c = session.createQuery(
+                    "SELECT COUNT(DISTINCT sv.chiTietDonHang.donHang.maDH) FROM SachVatLy sv " +
+                    "WHERE sv.trangThai = :tt AND sv.chiTietDonHang.donHang.trangThai = :trangThai",
+                    Long.class)
+                    .setParameter("tt", DA_BAN)
+                    .setParameter("trangThai", TRANG_THAI_DA_GIAO)
+                    .uniqueResult();
+            return c == null ? 0 : c;
+        }
+    }
+
     // Lay chi tiet mot don hang kem theo danh sach cac san pham (chi tiet don hang)
     public DonHang getById(Integer maDH) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
