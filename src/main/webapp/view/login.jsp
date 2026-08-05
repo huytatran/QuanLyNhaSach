@@ -56,7 +56,6 @@
                 Xác nhận đăng nhập
             </button>
             <p class="text-muted text-center mt-3 mb-0" style="font-size: 12px;">
-                Tài khoản mẫu DB: <strong>admin</strong> / <strong>123456</strong>
             </p>
         </form>
     </div>

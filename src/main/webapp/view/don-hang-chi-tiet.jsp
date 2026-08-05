@@ -122,7 +122,7 @@
                                         </button>
                                     </c:when>
                                     <c:otherwise>
-                                        <span class="badge bg-secondary-subtle text-secondary qty-badge">Đã xử lý hết</span>
+                                        <span class="badge bg-secondary-subtle text-secondary qty-badge">Đã xử lý</span>
                                     </c:otherwise>
                                 </c:choose>
                             </td>

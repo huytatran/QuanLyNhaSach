@@ -63,24 +63,38 @@
         <li class="nav-item mt-4 mb-2">
             <span class="text-uppercase px-3" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Danh mục sách</span>
         </li>
+
+        <%-- Thuộc tính sách — có thể thu gọn/mở rộng --%>
         <li class="nav-item mb-1">
-            <a href="${pageContext.request.contextPath}/danhmuc"
-               class="nav-link d-flex align-items-center ${activeMenu == 'danhmuc' ? 'text-white' : 'text-white-50 hover-menu'}"
-               style="${activeMenu == 'danhmuc' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
-                <i class="bi bi-tags-fill me-2"></i> Thuộc tính sách
+            <a href="#submenuDanhMuc" data-bs-toggle="collapse"
+               class="nav-link d-flex align-items-center justify-content-between ${activeMenu == 'danhmuc' ? 'text-white' : 'text-white-50 hover-menu'}"
+               style="${activeMenu == 'danhmuc' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}"
+               aria-expanded="${activeMenu == 'danhmuc' ? 'true' : 'false'}">
+                <span><i class="bi bi-tags-fill me-2"></i> Thuộc tính sách</span>
+                <i class="bi bi-chevron-down" id="chevronDanhMuc"
+                   style="font-size:11px;transition:transform 0.2s;
+                          transform:${activeMenu == 'danhmuc' ? 'rotate(180deg)' : 'rotate(0deg)'}"></i>
             </a>
-        </li>
-        <li class="nav-item mb-1 ms-3">
-            <a href="${pageContext.request.contextPath}/danhmuc?tab=theloai" class="nav-link text-white-50 hover-menu py-1" style="font-size: 13px; border-radius: 8px;">Thể loại</a>
-        </li>
-        <li class="nav-item mb-1 ms-3">
-            <a href="${pageContext.request.contextPath}/danhmuc?tab=tacgia" class="nav-link text-white-50 hover-menu py-1" style="font-size: 13px; border-radius: 8px;">Tác giả</a>
-        </li>
-        <li class="nav-item mb-1 ms-3">
-            <a href="${pageContext.request.contextPath}/danhmuc?tab=nxb" class="nav-link text-white-50 hover-menu py-1" style="font-size: 13px; border-radius: 8px;">Nhà xuất bản</a>
-        </li>
-        <li class="nav-item mb-1 ms-3">
-            <a href="${pageContext.request.contextPath}/danhmuc?tab=bosach" class="nav-link text-white-50 hover-menu py-1" style="font-size: 13px; border-radius: 8px;">Bộ sách / series</a>
+            <div class="collapse ${activeMenu == 'danhmuc' ? 'show' : ''}" id="submenuDanhMuc">
+                <ul class="nav flex-column ps-3 mt-1" style="gap:2px;">
+                    <li class="nav-item mb-1">
+                        <a href="${pageContext.request.contextPath}/danhmuc?tab=theloai"
+                           class="nav-link text-white-50 hover-menu py-1" style="font-size:13px;border-radius:8px;">Thể loại</a>
+                    </li>
+                    <li class="nav-item mb-1">
+                        <a href="${pageContext.request.contextPath}/danhmuc?tab=tacgia"
+                           class="nav-link text-white-50 hover-menu py-1" style="font-size:13px;border-radius:8px;">Tác giả</a>
+                    </li>
+                    <li class="nav-item mb-1">
+                        <a href="${pageContext.request.contextPath}/danhmuc?tab=nxb"
+                           class="nav-link text-white-50 hover-menu py-1" style="font-size:13px;border-radius:8px;">Nhà xuất bản</a>
+                    </li>
+                    <li class="nav-item mb-1">
+                        <a href="${pageContext.request.contextPath}/danhmuc?tab=bosach"
+                           class="nav-link text-white-50 hover-menu py-1" style="font-size:13px;border-radius:8px;">Bộ sách / series</a>
+                    </li>
+                </ul>
+            </div>
         </li>
 
         <!-- Đã sửa đường link cho chuẩn với VoucherServlet -->
@@ -162,4 +176,18 @@
             window.addEventListener(evt, resetTimer);
         });
     })();
+
+    // Xoay mũi tên khi mở/đóng submenu Thuộc tính sách
+    document.addEventListener('DOMContentLoaded', function() {
+        var submenu = document.getElementById('submenuDanhMuc');
+        var chevron = document.getElementById('chevronDanhMuc');
+        if (submenu && chevron) {
+            submenu.addEventListener('show.bs.collapse', function() {
+                chevron.style.transform = 'rotate(180deg)';
+            });
+            submenu.addEventListener('hide.bs.collapse', function() {
+                chevron.style.transform = 'rotate(0deg)';
+            });
+        }
+    });
 </script>

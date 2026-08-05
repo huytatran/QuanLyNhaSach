@@ -37,6 +37,8 @@ public class DashboardServlet extends HttpServlet {
         request.setAttribute("soDauSach", thongKeDAO.demDauSach());
         request.setAttribute("soNhanVien", nhanVienDAO.demTatCa());
         request.setAttribute("donHangGanDay", thongKeDAO.getDonHangGanDay(8));
+        request.setAttribute("topSach7Ngay", thongKeDAO.topSachBanChay7Ngay(5));
+        request.setAttribute("doanhThu7Ngay", thongKeDAO.doanhThu7Ngay());
         request.setAttribute("activeMenu", "dashboard");
 
         request.getRequestDispatcher("/view/dashboard.jsp").forward(request, response);
