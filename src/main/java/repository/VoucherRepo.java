@@ -147,7 +147,7 @@ public class VoucherRepo {
 
         BigDecimal soTienGiam = BigDecimal.ZERO;
 
-        // 4.3 Xử lý tính toán dựa theo loại giảm giá (1: %, 2: Tiền mặt)
+        // 4.3 Xử lý tính toán dựa theo loại giảm giá (1: %, 0: Tiền mặt)
         if (v.getLoaiGiam() == 1) {
             // Tính số tiền giảm theo %
             BigDecimal phanTram = v.getGiaTri().divide(new BigDecimal("100"));
@@ -158,7 +158,7 @@ public class VoucherRepo {
                 soTienGiam = v.getGiaGiamToiDa();
             }
 
-        } else if (v.getLoaiGiam() == 2) {
+        } else if (v.getLoaiGiam() == 0) {
             // Giảm tiền mặt trực tiếp
             soTienGiam = v.getGiaTri();
 
