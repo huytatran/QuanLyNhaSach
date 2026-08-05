@@ -157,6 +157,8 @@ public class SachServlet extends HttpServlet {
         String maBoSachStr = request.getParameter("maBoSach");
         String soPhanStr = request.getParameter("soPhan");
         String maTacGiaStr = request.getParameter("maTacGia");
+        String biaSach = request.getParameter("biaSach");
+        String ngonNgu = request.getParameter("ngonNgu");
 
         // ---- Kiem tra hop le du lieu dau vao ----
         String loi = kiemTraHopLe(maSach, tenSach, giaBanStr, maTLStr, maNXBStr);
@@ -166,12 +168,12 @@ public class SachServlet extends HttpServlet {
             request.setAttribute("activeMenu", "sach");
             napDuLieuDropdown(request);
             // giu lai du lieu nguoi dung da nhap de khong phai go lai
-            request.setAttribute("sach", taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr));
+            request.setAttribute("sach", taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr, biaSach, ngonNgu));
             request.getRequestDispatcher("/view/sach-form.jsp").forward(request, response);
             return;
         }
 
-        Sach sach = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr);
+        Sach sach = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr, biaSach, ngonNgu);
         Integer maTacGia = (maTacGiaStr == null || maTacGiaStr.isEmpty()) ? null : Integer.valueOf(maTacGiaStr);
 
         // ---- Xử lý ảnh bìa: ưu tiên file upload, fallback về hidden URL cũ ----
@@ -226,12 +228,15 @@ public class SachServlet extends HttpServlet {
     }
 
     private Sach taoSachTuForm(String maSach, String tenSach, String namXBStr, String giaBanStr,
-                               String maTLStr, String maNXBStr, String maBoSachStr, String soPhanStr) {
+                               String maTLStr, String maNXBStr, String maBoSachStr, String soPhanStr,
+                               String biaSach, String ngonNgu) {
         Sach sach = new Sach();
         sach.setMaSach(maSach == null ? null : maSach.trim());
         sach.setTenSach(tenSach == null ? null : tenSach.trim());
         sach.setNamXB(chuoiSangSoNguyen(namXBStr));
         sach.setGiaBan(chuoiSangTien(giaBanStr));
+        sach.setBiaSach((biaSach == null || biaSach.isBlank()) ? null : biaSach.trim());
+        sach.setNgonNgu((ngonNgu == null || ngonNgu.isBlank()) ? null : ngonNgu.trim());
 
         if (maTLStr != null && !maTLStr.isEmpty()) {
             TheLoai tl = new TheLoai();

@@ -46,11 +46,36 @@
             </a>
         </li>
         <li class="nav-item mb-1">
-            <a href="${pageContext.request.contextPath}/don-hang"
-               class="nav-link d-flex align-items-center ${activeMenu == 'donhang' ? 'text-white' : 'text-white-50 hover-menu'}"
-               style="${activeMenu == 'donhang' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
-                <i class="bi bi-receipt-cutoff me-2"></i> Đơn hàng / đổi trả
+            <a href="#submenuDonHang" data-bs-toggle="collapse"
+               class="nav-link d-flex align-items-center justify-content-between
+                      ${activeMenu == 'donhang' || activeMenu == 'doitra' ? 'text-white' : 'text-white-50 hover-menu'}"
+               style="${activeMenu == 'donhang' || activeMenu == 'doitra' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}"
+               aria-expanded="${activeMenu == 'donhang' || activeMenu == 'doitra' ? 'true' : 'false'}">
+                <span><i class="bi bi-receipt-cutoff me-2"></i> Đơn hàng</span>
+                <i class="bi bi-chevron-down" id="chevronDonHang"
+                   style="font-size:11px;transition:transform 0.2s;
+                          transform:${activeMenu == 'donhang' || activeMenu == 'doitra' ? 'rotate(180deg)' : 'rotate(0deg)'}"></i>
             </a>
+            <div class="collapse ${activeMenu == 'donhang' || activeMenu == 'doitra' ? 'show' : ''}" id="submenuDonHang">
+                <ul class="nav flex-column ps-3 mt-1" style="gap:2px;">
+                    <li class="nav-item mb-1">
+                        <a href="${pageContext.request.contextPath}/don-hang"
+                           class="nav-link text-white-50 hover-menu py-1
+                                  ${activeMenu == 'donhang' ? 'text-white fw-semibold' : ''}"
+                           style="font-size:13px;border-radius:8px;">
+                            <i class="bi bi-list-ul me-1"></i> Danh sách đơn
+                        </a>
+                    </li>
+                    <li class="nav-item mb-1">
+                        <a href="${pageContext.request.contextPath}/don-hang?tab=doi-tra"
+                           class="nav-link text-white-50 hover-menu py-1
+                                  ${activeMenu == 'doitra' ? 'text-white fw-semibold' : ''}"
+                           style="font-size:13px;border-radius:8px;">
+                            <i class="bi bi-arrow-left-right me-1"></i> Đổi / Trả hàng
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
         <li class="nav-item mb-1">
             <a href="${pageContext.request.contextPath}/khachhang"
@@ -182,12 +207,16 @@
         var submenu = document.getElementById('submenuDanhMuc');
         var chevron = document.getElementById('chevronDanhMuc');
         if (submenu && chevron) {
-            submenu.addEventListener('show.bs.collapse', function() {
-                chevron.style.transform = 'rotate(180deg)';
-            });
-            submenu.addEventListener('hide.bs.collapse', function() {
-                chevron.style.transform = 'rotate(0deg)';
-            });
+            submenu.addEventListener('show.bs.collapse', function() { chevron.style.transform = 'rotate(180deg)'; });
+            submenu.addEventListener('hide.bs.collapse', function() { chevron.style.transform = 'rotate(0deg)'; });
+        }
+
+        // Xoay mũi tên submenu Đơn hàng
+        var submenuDH = document.getElementById('submenuDonHang');
+        var chevronDH = document.getElementById('chevronDonHang');
+        if (submenuDH && chevronDH) {
+            submenuDH.addEventListener('show.bs.collapse', function() { chevronDH.style.transform = 'rotate(180deg)'; });
+            submenuDH.addEventListener('hide.bs.collapse', function() { chevronDH.style.transform = 'rotate(0deg)'; });
         }
     });
 </script>
