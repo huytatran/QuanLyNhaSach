@@ -139,6 +139,27 @@
                             <input type="number" min="1" name="soPhan" id="inputSoPhan" value="${sach.soPhan}" class="form-control" placeholder="VD: 1"
                                    <c:if test="${empty sach.boSach}">disabled</c:if>>
                         </div>
+
+                        <%-- Biến thể --%>
+                        <div class="col-12">
+                            <div style="font-size:11.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">
+                                Biến thể
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Loại bìa</label>
+                            <select name="biaSach" class="form-select">
+                                <option value="">-- Không xác định --</option>
+                                <option value="Bìa mềm"      ${sach.biaSach == 'Bìa mềm'      ? 'selected' : ''}>Bìa mềm</option>
+                                <option value="Bìa cứng"     ${sach.biaSach == 'Bìa cứng'     ? 'selected' : ''}>Bìa cứng</option>
+                                <option value="Bìa đặc biệt" ${sach.biaSach == 'Bìa đặc biệt' ? 'selected' : ''}>Bìa đặc biệt</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Ngôn ngữ</label>
+                            <input type="text" name="ngonNgu" value="${sach.ngonNgu}" class="form-control"
+                                   placeholder="VD: Tiếng Việt, Tiếng Anh, Song ngữ Anh-Việt">
+                        </div>
                     </div>
 
                     <hr class="my-4" style="border-color: #e2e8f0;">

@@ -46,6 +46,14 @@ public class Sach {
     @Column(name = "AnhBia")
     private String anhBia;
 
+    // Biến thể: loại bìa (VD: Bìa mềm, Bìa cứng, Bìa đặc biệt)
+    @Column(name = "BiaSach")
+    private String biaSach;
+
+    // Biến thể: ngôn ngữ (VD: Tiếng Việt, Tiếng Anh, Song ngữ Anh-Việt)
+    @Column(name = "NgonNgu")
+    private String ngonNgu;
+
     // MỚI: quan hệ ngược tới bảng trung gian Sach_TacGia
     @OneToMany(mappedBy = "sach", fetch = FetchType.LAZY)
     @ToString.Exclude
