@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-
 @WebServlet("/don-hang")
 public class DonHangServlet extends HttpServlet {
 
@@ -53,13 +52,13 @@ public class DonHangServlet extends HttpServlet {
         String tab = request.getParameter("tab");
 
         if ("doi-tra".equals(tab)) {
-            // Tab Đổi/Trả: chỉ hiện đơn đã giao (trangThai=1) còn cuốn chưa trả
+            // Tab Đổi/Trả: chỉ hiện đơn đã giao còn cuốn chưa trả
             request.setAttribute("danhSachDonHang", donHangDAO.getAllCoTheDoiTra(trang, SO_DONG_MOI_TRANG));
             request.setAttribute("tongSoTrang", (int) Math.max(1, Math.ceil(donHangDAO.countCoTheDoiTra() / (double) SO_DONG_MOI_TRANG)));
             request.setAttribute("trangHienTai", trang);
             request.setAttribute("tab", "doi-tra");
             request.setAttribute("activeMenu", "doitra");
-            request.getRequestDispatcher("/view/don-hang.jsp").forward(request, response);
+            request.getRequestDispatcher("/view/doi-tra.jsp").forward(request, response);
             return;
         }
 
@@ -77,7 +76,7 @@ public class DonHangServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        request.setCharacterEncoding(StandardCharsets.UTF_8);
+        try { request.setCharacterEncoding("UTF-8"); } catch (Exception ignored) {}
         String action = request.getParameter("action");
         Integer maDH = parseIntOrNull(request.getParameter("maDH"));
 
