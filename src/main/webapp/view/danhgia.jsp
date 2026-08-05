@@ -74,7 +74,7 @@
 
                     <div class="mb-3">
                         <label class="form-label">Điểm</label>
-                        <select class="form-select" name="diem" required>
+                        <select class="form-select" name="soSao" required>
                             <option value="5">⭐⭐⭐⭐⭐ - 5 sao</option>
                             <option value="4">⭐⭐⭐⭐ - 4 sao</option>
                             <option value="3">⭐⭐⭐ - 3 sao</option>
@@ -85,7 +85,7 @@
 
                     <div class="mb-4">
                         <label class="form-label">Nhận xét</label>
-                        <textarea class="form-control" name="binhLuan" rows="3" placeholder="Sách đẹp, nội dung dễ đọc..." required></textarea>
+                        <textarea class="form-control" name="noiDung" rows="3" placeholder="Sách đẹp, nội dung dễ đọc..." required></textarea>
                     </div>
 
                     <button type="submit" class="btn-primary-custom">
@@ -95,43 +95,75 @@
             </div>
         </div>
 
-        <!-- CỘT PHẢI: BẢNG DANH SÁCH ĐÁNH GIÁ -->
+        <!-- CỘT PHẢI: BẢNG DANH SÁCH ĐÁNH GIÁ & PHÂN TRANG -->
         <div class="col-lg-8">
-            <div class="card-custom p-4 h-100">
-                <table class="table table-custom table-borderless w-100">
-                    <thead>
-                    <tr>
-                        <th>KHÁCH HÀNG</th>
-                        <th>TÊN SÁCH</th>
-                        <th>ĐIỂM</th>
-                        <th>NHẬN XÉT GẦN ĐÂY</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <%
-                        List<DanhGia> listDG = (List<DanhGia>) request.getAttribute("listDanhGia");
-                        if (listDG != null && !listDG.isEmpty()) {
-                            for (DanhGia dg : listDG) {
-                                // Render số sao (Đã sửa thành getSoSao)
-                                String stars = "";
-                                for(int i = 0; i < dg.getSoSao(); i++) stars += "★";
-                    %>
-                    <tr>
-                        <td class="fw-bold" style="color: #0f172a;"><%= dg.getKhachHang().getTenKH() %></td>
-                        <td style="color: #64748b;"><%= dg.getSach().getTenSach() %></td>
-                        <td class="star-rating fs-5"><%= stars %></td>
-                        <td style="font-style: italic; color: #475569;">"<%= dg.getNoiDung() %>"</td>
-                    </tr>
-                    <% }} else { %>
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-5">
-                            <i class="bi bi-chat-square-text fs-2 d-block mb-2 text-black-50"></i>
-                            Chưa có đánh giá nào được ghi nhận.
-                        </td>
-                    </tr>
-                    <% } %>
-                    </tbody>
-                </table>
+            <div class="card-custom p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <table class="table table-custom table-borderless w-100 mb-0">
+                        <thead>
+                        <tr>
+                            <th>KHÁCH HÀNG</th>
+                            <th>TÊN SÁCH</th>
+                            <th>ĐIỂM</th>
+                            <th>NHẬN XÉT GẦN ĐÂY</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <%
+                            List<DanhGia> listDG = (List<DanhGia>) request.getAttribute("listDanhGia");
+                            if (listDG != null && !listDG.isEmpty()) {
+                                for (DanhGia dg : listDG) {
+                                    String stars = "";
+                                    for(int i = 0; i < dg.getSoSao(); i++) stars += "★";
+                        %>
+                        <tr>
+                            <td class="fw-bold" style="color: #0f172a;"><%= dg.getKhachHang().getTenKH() %></td>
+                            <td style="color: #64748b;"><%= dg.getSach().getTenSach() %></td>
+                            <td class="star-rating fs-5"><%= stars %></td>
+                            <td style="font-style: italic; color: #475569;">"<%= dg.getNoiDung() %>"</td>
+                        </tr>
+                        <% }} else { %>
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-5">
+                                <i class="bi bi-chat-square-text fs-2 d-block mb-2 text-black-50"></i>
+                                Chưa có đánh giá nào được ghi nhận.
+                            </td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- THANH PHÂN TRANG -->
+                <%
+                    Integer currentPage = (Integer) request.getAttribute("currentPage");
+                    Integer totalPages = (Integer) request.getAttribute("totalPages");
+                    if (currentPage == null) currentPage = 1;
+                    if (totalPages == null) totalPages = 1;
+
+                    if (totalPages > 1) {
+                %>
+                <nav aria-label="Page navigation" class="mt-4 pt-3 border-top">
+                    <ul class="pagination justify-content-end mb-0">
+                        <!-- Nút Trước -->
+                        <li class="page-item <%= (currentPage == 1) ? "disabled" : "" %>">
+                            <a class="page-link" href="${pageContext.request.contextPath}/danhgia?page=<%= currentPage - 1 %>">Previous</a>
+                        </li>
+
+                        <!-- Các số trang -->
+                        <% for (int i = 1; i <= totalPages; i++) { %>
+                        <li class="page-item <%= (currentPage == i) ? "active" : "" %>">
+                            <a class="page-link" href="${pageContext.request.contextPath}/danhgia?page=<%= i %>"><%= i %></a>
+                        </li>
+                        <% } %>
+
+                        <!-- Nút Sau -->
+                        <li class="page-item <%= (currentPage == totalPages) ? "disabled" : "" %>">
+                            <a class="page-link" href="${pageContext.request.contextPath}/danhgia?page=<%= currentPage + 1 %>">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+                <% } %>
             </div>
         </div>
 

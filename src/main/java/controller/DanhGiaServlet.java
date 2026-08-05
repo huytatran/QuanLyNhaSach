@@ -20,13 +20,33 @@ public class DanhGiaServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Lấy toàn bộ dữ liệu cần thiết
-        List<DanhGia> listDanhGia = danhGiaRepo.getAll();
+        // Cấu hình phân trang
+        int pageSize = 5; // Số lượng đánh giá hiển thị trên 1 trang
+        int page = 1;
+
+        String pageStr = request.getParameter("page");
+        if (pageStr != null && !pageStr.isBlank()) {
+            try {
+                page = Integer.parseInt(pageStr);
+                if (page < 1) page = 1;
+            } catch (Exception e) {
+                page = 1;
+            }
+        }
+
+        // Lấy dữ liệu phân trang và dropdown
+        List<DanhGia> listDanhGia = danhGiaRepo.getDanhGiaByPage(page, pageSize);
+        int totalItem = danhGiaRepo.getTotalCount();
+        int totalPages = (int) Math.ceil((double) totalItem / pageSize);
+
         List<Sach> listSach = danhGiaRepo.getListSach();
         List<KhachHang> listKhachHang = danhGiaRepo.getListKhachHang();
 
         // Đẩy lên JSP
         request.setAttribute("listDanhGia", listDanhGia);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+
         request.setAttribute("listSach", listSach);
         request.setAttribute("listKhachHang", listKhachHang);
 
