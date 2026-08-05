@@ -100,6 +100,56 @@
             </nav>
         </c:if>
 
+        <%-- Bảng 2: Đơn đã đổi/trả hoàn tất --%>
+        <div class="mt-4">
+            <h6 class="fw-bold mb-3" style="color:#0f172a;">
+                <i class="bi bi-check-circle-fill me-2" style="color:#10b981;"></i>
+                Đơn đã đổi/trả hoàn tất
+            </h6>
+            <div class="card bg-white border" style="border-color:#e2e8f0;border-radius:10px;">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                        <tr>
+                            <th class="ps-3">Mã đơn</th>
+                            <th>Thời gian</th>
+                            <th>Khách hàng</th>
+                            <th>Nhân viên</th>
+                            <th class="text-end">Tổng tiền</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <c:forEach var="dh" items="${daDOiTra}">
+                            <tr>
+                                <td class="ps-3 fw-semibold">#${dh.maDH}</td>
+                                <td>${dh.ngayLap}</td>
+                                <td>${dh.khachHang.tenKH}</td>
+                                <td>${dh.nhanVien.tenNV}</td>
+                                <td class="text-end fw-bold" style="color:#64748b;">
+                                    <fmt:formatNumber value="${dh.tongTien}" pattern="#,##0"/> ₫
+                                </td>
+                                <td class="text-center">
+                                    <a href="${pageContext.request.contextPath}/don-hang?action=view&ma=${dh.maDH}"
+                                       class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">
+                                        <i class="bi bi-eye me-1"></i> Xem chi tiết
+                                    </a>
+                                </td>
+                            </tr>
+                        </c:forEach>
+                        <c:if test="${empty daDOiTra}">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4" style="font-size:13.5px;">
+                                    Chưa có đơn nào được xử lý đổi/trả.
+                                </td>
+                            </tr>
+                        </c:if>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

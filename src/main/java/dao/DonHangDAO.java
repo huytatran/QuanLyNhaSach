@@ -93,6 +93,20 @@ public class DonHangDAO {
         }
     }
 
+    /** Lấy các đơn đã đổi/trả hoàn tất (trangThai = 2). */
+    public List<DonHang> getAllDaDoiTra() {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.createQuery(
+                    "SELECT DISTINCT dh FROM DonHang dh " +
+                    "LEFT JOIN FETCH dh.khachHang " +
+                    "LEFT JOIN FETCH dh.nhanVien " +
+                    "WHERE dh.trangThai = :tt " +
+                    "ORDER BY dh.ngayLap DESC", DonHang.class)
+                    .setParameter("tt", TRANG_THAI_DA_TRA)
+                    .getResultList();
+        }
+    }
+
     // Lay chi tiet mot don hang kem theo danh sach cac san pham (chi tiet don hang)
     public DonHang getById(Integer maDH) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {

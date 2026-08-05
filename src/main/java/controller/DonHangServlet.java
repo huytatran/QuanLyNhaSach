@@ -52,10 +52,10 @@ public class DonHangServlet extends HttpServlet {
         String tab = request.getParameter("tab");
 
         if ("doi-tra".equals(tab)) {
-            // Tab Đổi/Trả: chỉ hiện đơn đã giao còn cuốn chưa trả
             request.setAttribute("danhSachDonHang", donHangDAO.getAllCoTheDoiTra(trang, SO_DONG_MOI_TRANG));
             request.setAttribute("tongSoTrang", (int) Math.max(1, Math.ceil(donHangDAO.countCoTheDoiTra() / (double) SO_DONG_MOI_TRANG)));
             request.setAttribute("trangHienTai", trang);
+            request.setAttribute("daDOiTra", donHangDAO.getAllDaDoiTra());
             request.setAttribute("tab", "doi-tra");
             request.setAttribute("activeMenu", "doitra");
             request.getRequestDispatcher("/view/doi-tra.jsp").forward(request, response);
