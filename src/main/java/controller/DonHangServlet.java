@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-
 @WebServlet("/don-hang")
 public class DonHangServlet extends HttpServlet {
 
@@ -50,6 +49,19 @@ public class DonHangServlet extends HttpServlet {
         }
         if (trang < 1) trang = 1;
 
+        String tab = request.getParameter("tab");
+
+        if ("doi-tra".equals(tab)) {
+            request.setAttribute("danhSachDonHang", donHangDAO.getAllCoTheDoiTra(trang, SO_DONG_MOI_TRANG));
+            request.setAttribute("tongSoTrang", (int) Math.max(1, Math.ceil(donHangDAO.countCoTheDoiTra() / (double) SO_DONG_MOI_TRANG)));
+            request.setAttribute("trangHienTai", trang);
+            request.setAttribute("daDOiTra", donHangDAO.getAllDaDoiTra());
+            request.setAttribute("tab", "doi-tra");
+            request.setAttribute("activeMenu", "doitra");
+            request.getRequestDispatcher("/view/doi-tra.jsp").forward(request, response);
+            return;
+        }
+
         long tongSoDon = donHangDAO.countAll();
         int tongSoTrang = (int) Math.max(1, Math.ceil(tongSoDon / (double) SO_DONG_MOI_TRANG));
         if (trang > tongSoTrang) trang = tongSoTrang;
@@ -57,13 +69,14 @@ public class DonHangServlet extends HttpServlet {
         request.setAttribute("danhSachDonHang", donHangDAO.getAll(trang, SO_DONG_MOI_TRANG));
         request.setAttribute("trangHienTai", trang);
         request.setAttribute("tongSoTrang", tongSoTrang);
+        request.setAttribute("tab", "don-hang");
         request.setAttribute("activeMenu", "donhang");
         request.getRequestDispatcher("/view/don-hang.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        request.setCharacterEncoding(StandardCharsets.UTF_8);
+        try { request.setCharacterEncoding("UTF-8"); } catch (Exception ignored) {}
         String action = request.getParameter("action");
         Integer maDH = parseIntOrNull(request.getParameter("maDH"));
 

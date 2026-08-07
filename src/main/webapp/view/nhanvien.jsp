@@ -60,6 +60,7 @@
                         <th>Tài khoản</th>
                         <th>SĐT</th>
                         <th>Email</th>
+                        <th>Ca làm</th> <!-- Cột Ca làm việc mới thêm -->
                         <th>Vai trò</th>
                         <th class="text-center">Trạng thái</th>
                         <th class="text-end pe-3">Thao tác</th>
@@ -73,6 +74,19 @@
                             <td>${nv.taiKhoan}</td>
                             <td>${nv.sdt}</td>
                             <td>${nv.email}</td>
+
+                            <!-- Hiển thị dữ liệu Ca làm việc -->
+                            <td>
+                                <c:choose>
+                                    <c:when test="${not empty nv.caLamViec}">
+                                        <span class="badge" style="background:#e0f2fe;color:#0369a1;border-radius:6px;">${nv.caLamViec}</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="text-muted" style="font-style:italic;font-size:12px;">Chưa phân ca</span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
+
                             <td>
                                 <c:choose>
                                     <c:when test="${nv.vaiTroNV == 1}"><span class="badge rounded-pill" style="background:#eef2ff;color:#4338ca;">Admin</span></c:when>
@@ -96,7 +110,7 @@
                                         <div class="form-check form-switch d-flex justify-content-center m-0">
                                             <input class="form-check-input toggle-submit" type="checkbox" role="switch"
                                                    style="width:2.4em;height:1.3em;cursor:pointer;"
-                                                    ${nv.trangThai == false ? '' : 'checked'}
+                                                ${nv.trangThai == false ? '' : 'checked'}
                                                    title="${nv.trangThai == false ? 'Nghỉ làm - bấm để chuyển Đang làm' : 'Đang làm - bấm để chuyển Nghỉ làm'}">
                                         </div>
                                     </form>
@@ -111,7 +125,7 @@
                         </tr>
                     </c:forEach>
                     <c:if test="${empty danhSachNV}">
-                        <tr><td colspan="8" class="text-center text-muted py-5">Không có nhân viên.</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted py-5">Không có nhân viên.</td></tr>
                     </c:if>
                     </tbody>
                 </table>

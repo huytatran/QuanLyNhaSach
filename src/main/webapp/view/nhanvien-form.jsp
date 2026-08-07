@@ -54,10 +54,24 @@
                                 <option value="1" ${nhanVien.vaiTroNV == 1 ? 'selected' : ''}>Admin</option>
                             </select>
                         </div>
-                        <div class="col-12">
+
+                        <!-- CHỈNH SỬA: CHIA ĐÔI ROW NÀY CHO ĐỊA CHỈ VÀ CA LÀM VIỆC -->
+                        <div class="col-md-6">
                             <label class="form-label">Địa chỉ</label>
                             <input type="text" name="diaChi" value="${nhanVien.diaChi}" class="form-control">
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ca làm việc</label>
+                            <select name="caLamViec" class="form-select">
+                                <option value="" ${empty nhanVien.caLamViec ? 'selected' : ''}>-- Chưa phân ca --</option>
+                                <option value="07:00 - 09:00" ${nhanVien.caLamViec == '07:00 - 09:00' ? 'selected' : ''}>07:00 - 09:00 (Sáng sớm)</option>
+                                <option value="09:00 - 11:00" ${nhanVien.caLamViec == '09:00 - 11:00' ? 'selected' : ''}>09:00 - 11:00 (Sáng)</option>
+                                <option value="11:00 - 19:00" ${nhanVien.caLamViec == '11:00 - 19:00' ? 'selected' : ''}>11:00 - 19:00 (Trưa - Tối)</option>
+                                <option value="19:00 - 22:00" ${nhanVien.caLamViec == '19:00 - 22:00' ? 'selected' : ''}>19:00 - 22:00 (Tối)</option>
+                            </select>
+                        </div>
+                        <!-- KẾT THÚC CHỈNH SỬA -->
+
                         <div class="col-md-6">
                             <label class="form-label">Tài khoản *</label>
                             <input type="text" name="taiKhoan" value="${nhanVien.taiKhoan}" class="form-control" required>

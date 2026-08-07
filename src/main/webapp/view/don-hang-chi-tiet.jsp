@@ -51,10 +51,7 @@
                 <div class="row g-4">
                     <div class="col-md-3">
                         <div class="info-label">Thời gian lập</div>
-                        <div class="info-value">
-                            <fmt:parseDate value="${donHang.ngayLap}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedDT" type="both" />
-                            <fmt:formatDate pattern="dd/MM/yyyy HH:mm" value="${parsedDT}" />
-                        </div>
+                        <div class="info-value">${donHang.ngayLap}</div>
                     </div>
                     <div class="col-md-3">
                         <div class="info-label">Khách hàng</div>
@@ -111,6 +108,9 @@
                             </td>
                             <td class="text-center pe-4 no-print">
                                 <c:choose>
+                                    <c:when test="${donHang.trangThai == 2}">
+                                        <span class="badge bg-secondary-subtle text-secondary qty-badge">Đã hủy/trả</span>
+                                    </c:when>
                                     <c:when test="${conLai > 0}">
                                         <button type="button" class="btn btn-sm btn-outline-warning" style="border-radius:6px;"
                                                 data-bs-toggle="modal" data-bs-target="#traModal${ct.maCTDH}">
@@ -200,7 +200,7 @@
                     <tr class="table-light">
                         <td colspan="3" class="text-end fw-bold py-3">TỔNG CỘNG:</td>
                         <td class="text-end fw-bold py-3" style="font-size:18px; color:#4f46e5;">
-                            <fmt:formatNumber value="${donHang.tongTien - donHang.soTienGiam}" pattern="#,##0"/> ₫
+                            <fmt:formatNumber value="${donHang.tongTien}" pattern="#,##0"/> ₫
                         </td>
                         <td colspan="2" class="no-print"></td>
                     </tr>
