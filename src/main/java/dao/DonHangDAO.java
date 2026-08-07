@@ -68,6 +68,95 @@ public class DonHangDAO {
     }
 
     /**
+     * Tạo đơn hàng từ giỏ hàng có biến thể (CartItem).
+     * Mỗi CartItem mang maBienThe (null/0 = không có biến thể, dùng giá sach.giaBan).
+     * @return maDH vừa tạo
+     */
+    public int taoDonHangBienThe(Integer maKH, Integer maNV, String phuongThuc,
+                                 java.util.List<entity.CartItem> items,
+                                 java.math.BigDecimal soTienGiam) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Giỏ hàng trống.");
+        }
+        Transaction tx = null;
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            tx = session.beginTransaction();
+
+            KhachHang kh = session.get(KhachHang.class, maKH);
+            NhanVien  nv = session.get(NhanVien.class, maNV);
+            if (kh == null) throw new IllegalArgumentException("Không tìm thấy khách hàng.");
+            if (nv == null) throw new IllegalArgumentException("Không tìm thấy nhân viên.");
+
+            DonHang dh = new DonHang();
+            dh.setNgayLap(java.time.LocalDateTime.now());
+            dh.setTongTien(BigDecimal.ZERO);
+            dh.setTrangThai(TRANG_THAI_DA_GIAO);
+            dh.setPhuongThucThanhToan(phuongThuc);
+            dh.setKhachHang(kh);
+            dh.setNhanVien(nv);
+            dh.setSoTienGiam(soTienGiam == null ? BigDecimal.ZERO : soTienGiam);
+            session.persist(dh);
+            session.flush();
+
+            BigDecimal tong = BigDecimal.ZERO;
+
+            for (entity.CartItem item : items) {
+                int soLuong = item.getSoLuong();
+                if (soLuong <= 0) continue;
+
+                Sach sach = session.get(Sach.class, item.getMaSach());
+                if (sach == null) throw new IllegalArgumentException("Không tìm thấy sách " + item.getMaSach());
+
+                // Giá lấy từ CartItem (snapshot lúc thêm vào giỏ)
+                BigDecimal donGia = item.getDonGia() != null ? item.getDonGia() : BigDecimal.ZERO;
+
+                // Lấy SachVatLy còn trong kho
+                java.util.List<SachVatLy> cuonCoSan = session.createQuery(
+                        "FROM SachVatLy sv WHERE sv.sach.maSach = :ma AND sv.trangThai = :tt",
+                        SachVatLy.class)
+                        .setParameter("ma", item.getMaSach())
+                        .setParameter("tt", CO_SAN)
+                        .setMaxResults(soLuong)
+                        .getResultList();
+
+                if (cuonCoSan.size() < soLuong) {
+                    throw new IllegalArgumentException(
+                            "Sách \"" + sach.getTenSach() + "\" chỉ còn " + cuonCoSan.size() + " cuốn.");
+                }
+
+                ChiTietDonHang ct = new ChiTietDonHang();
+                ct.setDonHang(dh);
+                ct.setSach(sach);
+                ct.setSoLuong(soLuong);
+                ct.setDonGia(donGia);
+                // Ghi lại biến thể đã bán để xem lại lịch sử đơn hàng
+                if (item.getMaBienThe() != null && item.getMaBienThe() > 0) {
+                    SachBienThe bt = session.get(entity.SachBienThe.class, item.getMaBienThe());
+                    ct.setSachBienThe(bt);
+                }
+                session.persist(ct);
+                session.flush();
+
+                tong = tong.add(donGia.multiply(BigDecimal.valueOf(soLuong)));
+
+                for (SachVatLy sv : cuonCoSan) {
+                    sv.setTrangThai(DA_BAN);
+                    sv.setChiTietDonHang(ct);
+                    session.merge(sv);
+                }
+            }
+
+            dh.setTongTien(tong);
+            session.merge(dh);
+            tx.commit();
+            return dh.getMaDH();
+        } catch (RuntimeException e) {
+            if (tx != null) tx.rollback();
+            throw e;
+        }
+    }
+
+    /**
      * Tao don ban hang POS: 
      * 1. Tao ban ghi DonHang
      * 2. Voi moi mon hang: Tao ChiTietDonHang + Cap nhat tung cuon SachVatLy tu 'Có sẵn' sang 'Đã bán'

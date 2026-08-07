@@ -50,6 +50,14 @@ public class TacGiaDAO {
     }
 
     public boolean insert(String tenTG, String tieuSu) {
+        return insertAndGetId(tenTG, tieuSu) != null;
+    }
+
+    /**
+     * Them moi tac gia va tra ve ID vua tao.
+     * @return ID moi neu thanh cong, null neu ten da ton tai
+     */
+    public Integer insertAndGetId(String tenTG, String tieuSu) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
 
@@ -59,7 +67,7 @@ public class TacGiaDAO {
                     .setParameter("ten", tenTG.trim().toLowerCase())
                     .uniqueResult();
 
-            if (trung != null && trung > 0) return false;
+            if (trung != null && trung > 0) return null;
 
             tx = session.beginTransaction();
 
@@ -68,9 +76,8 @@ public class TacGiaDAO {
             tg.setTieuSu(tieuSu);
 
             session.persist(tg);
-
             tx.commit();
-            return true;
+            return tg.getMaTG();
 
         } catch (RuntimeException e) {
             if (tx != null) tx.rollback();
