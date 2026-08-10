@@ -3,13 +3,20 @@ package controller;
 import dao.*;
 import entity.*;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +33,13 @@ import java.util.Map;
  *  POST /sach?action=delete&ma=... -> xoa
  */
 @WebServlet("/sach")
+@MultipartConfig(
+        maxFileSize = 3 * 1024 * 1024,       // 3MB / file
+        maxRequestSize = 4 * 1024 * 1024     // 4MB / request
+)
 public class SachServlet extends HttpServlet {
+
+    private static final String THU_MUC_ANH_BIA = "/uploads/books";
 
     private final SachDAO sachDAO = new SachDAO();
     private final TheLoaiDAO theLoaiDAO = new TheLoaiDAO();
@@ -176,13 +189,20 @@ public class SachServlet extends HttpServlet {
             request.setAttribute("activeMenu", "sach");
             napDuLieuDropdown(request);
             // giu lai du lieu nguoi dung da nhap de khong phai go lai
-            request.setAttribute("sach", taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr));
+            Sach sachTam = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr);
+            sachTam.setAnhBia(request.getParameter("anhBiaHienTai"));
+            request.setAttribute("sach", sachTam);
             request.getRequestDispatcher("/view/sach-form.jsp").forward(request, response);
             return;
         }
 
         Sach sach = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr);
         Integer maTacGia = (maTacGiaStr == null || maTacGiaStr.isEmpty()) ? null : Integer.valueOf(maTacGiaStr);
+
+        // Neu nguoi dung chon anh moi (file hoac URL) thi luu/gan duong dan; neu khong thi giu anh cu (khi sua)
+        String anhBiaHienTai = request.getParameter("anhBiaHienTai");
+        String anhBiaUrl = request.getParameter("anhBiaUrl");
+        sach.setAnhBia(xuLyUploadAnh(request, maSach.trim(), anhBiaHienTai, anhBiaUrl));
 
         try {
             if ("sua".equals(mode)) {
@@ -253,6 +273,50 @@ public class SachServlet extends HttpServlet {
             sach.setSoPhan(chuoiSangSoNguyen(soPhanStr));
         }
         return sach;
+    }
+
+    /**
+     * Luu anh bia theo thu tu uu tien:
+     *  1) File upload (anhBiaFile) - neu co chon, luu vao THU_MUC_ANH_BIA, ten = maSach + duoi anh.
+     *  2) URL anh (anhBiaUrl) - neu khong co file nhung co dan URL hop le, luu thang URL do.
+     *  3) Khong co gi moi -> giu nguyen anhBiaHienTai (dung khi sua sach, khong doi anh).
+     */
+    private String xuLyUploadAnh(HttpServletRequest request, String maSach, String anhBiaHienTai, String anhBiaUrl) {
+        try {
+            Part part = request.getPart("anhBiaFile");
+            if (part != null && part.getSize() > 0) {
+                String tenGoc = part.getSubmittedFileName();
+                String duoiFile = (tenGoc != null && tenGoc.contains("."))
+                        ? tenGoc.substring(tenGoc.lastIndexOf('.')).toLowerCase()
+                        : "";
+                if (duoiFile.matches("\\.(jpg|jpeg|png|webp)")) {
+                    String realPath = getServletContext().getRealPath(THU_MUC_ANH_BIA);
+                    File thuMuc = new File(realPath);
+                    if (!thuMuc.exists()) thuMuc.mkdirs();
+
+                    String tenFile = maSach + duoiFile;
+                    Path duongDanDich = new File(thuMuc, tenFile).toPath();
+                    try (InputStream in = part.getInputStream()) {
+                        Files.copy(in, duongDanDich, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    // Bo dau "/" o dau de khop kieu duong dan tuong doi da dung trong sach.jsp/pos.jsp
+                    return THU_MUC_ANH_BIA.substring(1) + "/" + tenFile;
+                }
+                // File co nhung sai dinh dang -> bo qua, roi thu tiep URL/anh cu ben duoi
+            }
+
+            if (anhBiaUrl != null && !anhBiaUrl.trim().isEmpty()) {
+                String url = anhBiaUrl.trim();
+                if (url.matches("(?i)^https?://.+")) {
+                    return url;
+                }
+                // URL khong hop le -> bo qua, giu anh cu
+            }
+
+            return anhBiaHienTai;
+        } catch (Exception e) {
+            return anhBiaHienTai; // co loi khi upload -> khong lam hong viec luu sach, giu anh cu
+        }
     }
 
     private Integer chuoiSangSoNguyen(String s) {
@@ -408,4 +472,3 @@ public class SachServlet extends HttpServlet {
                 + java.net.URLEncoder.encode(loi, "UTF-8"));
     }
 }
-

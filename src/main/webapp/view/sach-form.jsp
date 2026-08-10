@@ -38,9 +38,10 @@
 
         <div class="card bg-white border" style="border-color: #e2e8f0; border-radius: 10px;">
             <div class="card-body p-4">
-                <form method="post" action="${pageContext.request.contextPath}/sach">
+                <form method="post" action="${pageContext.request.contextPath}/sach" enctype="multipart/form-data">
                     <input type="hidden" name="mode" value="${dangSua ? 'sua' : 'them'}">
                     <input type="hidden" name="action" value="save">
+                    <input type="hidden" name="anhBiaHienTai" value="${sach.anhBia}">
 
                     <div class="row g-3">
                         <div class="col-md-4">
@@ -52,6 +53,28 @@
                         <div class="col-md-8">
                             <label class="form-label">Tên sách *</label>
                             <input type="text" name="tenSach" value="${sach.tenSach}" class="form-control" placeholder="Nhập tên sách" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">
+                                Ảnh bìa
+                                <i class="bi bi-info-circle text-muted" title="Chọn file từ máy hoặc dán URL ảnh có sẵn"></i>
+                            </label>
+                            <div class="d-flex align-items-start gap-3">
+                                <img id="previewAnhBia"
+                                     src="${not empty sach.anhBia ? sach.anhBia : ''}"
+                                     style="width:70px;height:92px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;background:#f1f5f9;flex-shrink:0;${empty sach.anhBia ? 'display:none;' : ''}" />
+                                <div class="flex-grow-1">
+                                    <div class="form-text mb-1" style="font-size:12px;">Chọn file từ máy</div>
+                                    <input type="file" name="anhBiaFile" id="inputAnhBia" accept="image/png,image/jpeg,image/webp" class="form-control">
+                                    <div class="form-text mt-1" style="font-size:12px;">Hoặc dán URL ảnh</div>
+                                    <div class="d-flex gap-2 mt-1">
+                                        <input type="text" name="anhBiaUrl" id="inputAnhBiaUrl" value="" class="form-control form-control-sm" placeholder="https://...">
+                                        <button type="button" id="btnApDungUrl" class="btn btn-outline-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">Áp dụng</button>
+                                    </div>
+                                    <div class="form-text mt-1" style="font-size:12px;">Ảnh JPG/PNG/WEBP, tối đa 3MB. File sẽ được ưu tiên nếu chọn cả hai. Bỏ trống cả hai nếu không muốn đổi ảnh.</div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-md-4">
@@ -304,6 +327,33 @@
     </div>
 </div>
 
+<!-- Mini-modal thêm nhanh (đặt TRƯỚC <script> để các phần tử #qaBtn, #qaInput...
+     đã có sẵn trong DOM khi script bên dưới chạy - script chạy đồng bộ ngay khi
+     trình duyệt đọc tới thẻ <script>, không đợi phần HTML phía sau nó) -->
+<div class="modal fade" id="quickAddModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+        <div class="modal-content" style="border-radius:12px;border:none;box-shadow:0 8px 32px rgba(15,23,42,.15);">
+            <div class="modal-header border-0 pb-1">
+                <h6 class="modal-title fw-bold" id="qaModalTitle" style="color:#0f172a;font-size:14.5px;"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <label class="form-label" id="qaInputLabel"></label>
+                <input type="text" id="qaInput" class="form-control" autocomplete="off">
+                <div id="qaError" style="font-size:12.5px;color:#dc2626;margin-top:6px;display:none;"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:6px;">Hủy</button>
+                <button type="button" class="btn btn-sm text-white fw-semibold" id="qaBtn"
+                        style="background:#4f46e5;border-radius:6px;min-width:90px;">
+                    <span id="qaBtnText"><i class="bi bi-plus-lg me-1"></i>Thêm</span>
+                    <span id="qaBtnSpinner" class="spinner-border spinner-border-sm" style="display:none;"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Chi cho nhap "So phan" khi da chon 1 Bo Sach cu the
@@ -368,25 +418,25 @@
 
         let html = '<div class="table-responsive mb-2"><table class="table table-sm mb-0">';
         html += '<thead><tr style="font-size:11px;text-transform:uppercase;color:#64748b;">'
-              + '<th>Mã biến thể</th><th>Bìa</th><th>Ngôn ngữ</th>'
-              + '<th class="text-end">Giá (₫)</th><th></th></tr></thead><tbody>';
+            + '<th>Mã biến thể</th><th>Bìa</th><th>Ngôn ngữ</th>'
+            + '<th class="text-end">Giá (₫)</th><th></th></tr></thead><tbody>';
 
         _btRows.forEach(function(row, i) {
             const giaFmt = Number(row.gia).toLocaleString('vi-VN');
             html += '<tr style="font-size:13px;">'
-                  + '<td class="fw-semibold">' + escHtml(row.maCode) + '</td>'
-                  + '<td>' + (row.bia || '—') + '</td>'
-                  + '<td>' + (row.ngonNgu || '—') + '</td>'
-                  + '<td class="text-end">' + giaFmt + ' ₫</td>'
-                  + '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:6px;" onclick="xoaDongBienThe(' + i + ')">'
-                  + '<i class="bi bi-trash"></i></button></td></tr>';
+                + '<td class="fw-semibold">' + escHtml(row.maCode) + '</td>'
+                + '<td>' + (row.bia || '—') + '</td>'
+                + '<td>' + (row.ngonNgu || '—') + '</td>'
+                + '<td class="text-end">' + giaFmt + ' ₫</td>'
+                + '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:6px;" onclick="xoaDongBienThe(' + i + ')">'
+                + '<i class="bi bi-trash"></i></button></td></tr>';
 
             // Thêm hidden fields vào form chính
             ['btBia', 'btNgonNgu', 'btMaCode', 'btGia'].forEach(function(name) {
                 const val = name === 'btBia' ? row.bia
-                          : name === 'btNgonNgu' ? row.ngonNgu
-                          : name === 'btMaCode' ? row.maCode
-                          : row.gia;
+                    : name === 'btNgonNgu' ? row.ngonNgu
+                        : name === 'btMaCode' ? row.maCode
+                            : row.gia;
                 const inp = document.createElement('input');
                 inp.type = 'hidden'; inp.name = name; inp.value = val || '';
                 inp.className = 'bt-hidden';
@@ -402,9 +452,50 @@
         return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // ---- Xem truoc anh bia truoc khi upload ----
+    document.getElementById('inputAnhBia').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        const img = document.getElementById('previewAnhBia');
+        if (!file) return;
+        if (file.size > 3 * 1024 * 1024) {
+            alert('Ảnh vượt quá 3MB, vui lòng chọn ảnh khác.');
+            e.target.value = '';
+            return;
+        }
+        document.getElementById('inputAnhBiaUrl').value = ''; // uu tien file, xoa URL da nhap (neu co)
+        img.src = URL.createObjectURL(file);
+        img.style.display = '';
+    });
+
+    // ---- Xem truoc anh bia tu URL ----
+    document.getElementById('btnApDungUrl').addEventListener('click', function () {
+        const url = document.getElementById('inputAnhBiaUrl').value.trim();
+        if (!url) return;
+        if (!/^https?:\/\//i.test(url)) {
+            alert('URL ảnh không hợp lệ, cần bắt đầu bằng http:// hoặc https://');
+            return;
+        }
+        document.getElementById('inputAnhBia').value = ''; // dung URL thi bo chon file (neu co)
+        const img = document.getElementById('previewAnhBia');
+        img.onerror = function () { alert('Không tải được ảnh từ URL này, vui lòng kiểm tra lại.'); };
+        img.src = url;
+        img.style.display = '';
+    });
+
     // ---- Quick-add modal ----
+    // Khoi tao modal kieu "lazy" (chi tao khi thuc su can dung) vi phan tu
+    // #quickAddModal nam SAU the <script> nay trong HTML - neu khoi tao
+    // ngay luc script chay thi getElementById se tra ve null va bootstrap
+    // se bao loi, khien toan bo script phia duoi (bao gom cac addEventListener)
+    // khong duoc thuc thi.
     let _qaLoai = '', _qaSelectId = '';
-    const _qaModal = new bootstrap.Modal(document.getElementById('quickAddModal'));
+    let _qaModal = null;
+    function getQaModal() {
+        if (!_qaModal) {
+            _qaModal = new bootstrap.Modal(document.getElementById('quickAddModal'));
+        }
+        return _qaModal;
+    }
 
     function moQuickAdd(loai, tieuDe, nhanInput, selectId) {
         _qaLoai     = loai;
@@ -416,7 +507,7 @@
         document.getElementById('qaError').style.display     = 'none';
         document.getElementById('qaError').textContent       = '';
         setQaLoading(false);
-        _qaModal.show();
+        getQaModal().show();
         document.getElementById('quickAddModal').addEventListener('shown.bs.modal', function focusOnce() {
             document.getElementById('qaInput').focus();
             document.getElementById('quickAddModal').removeEventListener('shown.bs.modal', focusOnce);
@@ -446,55 +537,31 @@
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body:    params.toString()
         })
-        .then(r => r.json())
-        .then(data => {
-            setQaLoading(false);
-            if (data.ok) {
-                const sel = document.getElementById(_qaSelectId);
-                const opt = new Option(data.ten, data.id, true, true);
-                sel.add(opt);
-                sel.value = data.id;
-                _qaModal.hide();
-            } else {
-                errEl.textContent  = data.loi || 'Có lỗi xảy ra.';
+            .then(r => r.json())
+            .then(data => {
+                setQaLoading(false);
+                if (data.ok) {
+                    const sel = document.getElementById(_qaSelectId);
+                    const opt = new Option(data.ten, data.id, true, true);
+                    sel.add(opt);
+                    sel.value = data.id;
+                    sel.dispatchEvent(new Event('change'));
+                    getQaModal().hide();
+                } else {
+                    errEl.textContent  = data.loi || 'Có lỗi xảy ra.';
+                    errEl.style.display = '';
+                }
+            })
+            .catch(() => {
+                setQaLoading(false);
+                errEl.textContent  = 'Không thể kết nối máy chủ.';
                 errEl.style.display = '';
-            }
-        })
-        .catch(() => {
-            setQaLoading(false);
-            errEl.textContent  = 'Không thể kết nối máy chủ.';
-            errEl.style.display = '';
-        });
+            });
     });
 
     document.getElementById('qaInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); document.getElementById('qaBtn').click(); }
     });
 </script>
-
-<!-- Mini-modal thêm nhanh -->
-<div class="modal fade" id="quickAddModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
-        <div class="modal-content" style="border-radius:12px;border:none;box-shadow:0 8px 32px rgba(15,23,42,.15);">
-            <div class="modal-header border-0 pb-1">
-                <h6 class="modal-title fw-bold" id="qaModalTitle" style="color:#0f172a;font-size:14.5px;"></h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body pt-2">
-                <label class="form-label" id="qaInputLabel"></label>
-                <input type="text" id="qaInput" class="form-control" autocomplete="off">
-                <div id="qaError" style="font-size:12.5px;color:#dc2626;margin-top:6px;display:none;"></div>
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:6px;">Hủy</button>
-                <button type="button" class="btn btn-sm text-white fw-semibold" id="qaBtn"
-                        style="background:#4f46e5;border-radius:6px;min-width:90px;">
-                    <span id="qaBtnText"><i class="bi bi-plus-lg me-1"></i>Thêm</span>
-                    <span id="qaBtnSpinner" class="spinner-border spinner-border-sm" style="display:none;"></span>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 </body>
 </html>
