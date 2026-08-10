@@ -16,11 +16,11 @@ public class HibernateConfig {
         Configuration conf = new Configuration();
 
         Properties properties = new Properties();
-        properties.put(Environment.DIALECT, "org.hibernate.dialect.SQLServer2016Dialect");
+        properties.put(Environment.DIALECT, "org.hibernate.dialect.SQLServerDialect");
         properties.put(Environment.DRIVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
+        properties.put(Environment.URL, "jdbc:sqlserver://sqlserver_db:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
         properties.put(Environment.USER, "sa");
-        properties.put(Environment.PASS, "123456");
+        properties.put(Environment.PASS, "qưerty123");
         properties.put(Environment.SHOW_SQL, "true");
 
         /*Ht272705
