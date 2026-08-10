@@ -3,19 +3,13 @@ package controller;
 import dao.*;
 import entity.*;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Part;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +26,6 @@ import java.util.Map;
  *  POST /sach?action=delete&ma=... -> xoa
  */
 @WebServlet("/sach")
-@MultipartConfig
 public class SachServlet extends HttpServlet {
 
     private final SachDAO sachDAO = new SachDAO();
@@ -40,6 +33,7 @@ public class SachServlet extends HttpServlet {
     private final NhaXuatBanDAO nxbDAO = new NhaXuatBanDAO();
     private final BoSachDAO boSachDAO = new BoSachDAO();
     private final TacGiaDAO tacGiaDAO = new TacGiaDAO();
+    private final SachBienTheDAO bienTheDAO = new SachBienTheDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -67,6 +61,7 @@ public class SachServlet extends HttpServlet {
             napDuLieuDropdown(request);
             request.setAttribute("sach", sach);
             request.setAttribute("tacGiaChinh", sachDAO.getTacGiaChinh(ma));
+            request.setAttribute("dsBienThe", bienTheDAO.getBySach(ma));
             request.setAttribute("dangSua", true);
             request.setAttribute("activeMenu", "sach");
             request.getRequestDispatcher("/view/sach-form.jsp").forward(request, response);
@@ -88,9 +83,24 @@ public class SachServlet extends HttpServlet {
             xuLyXoa(request, response);
             return;
         }
-
         if ("toggleTrangThai".equals(action)) {
             xuLyDoiTrangThai(request, response);
+            return;
+        }
+        if ("themBienThe".equals(action)) {
+            xuLyThemBienThe(request, response);
+            return;
+        }
+        if ("suaBienThe".equals(action)) {
+            xuLySuaBienThe(request, response);
+            return;
+        }
+        if ("xoaBienThe".equals(action)) {
+            xuLyXoaBienThe(request, response);
+            return;
+        }
+        if ("toggleBienThe".equals(action)) {
+            xuLyToggleBienThe(request, response);
             return;
         }
 
@@ -157,8 +167,6 @@ public class SachServlet extends HttpServlet {
         String maBoSachStr = request.getParameter("maBoSach");
         String soPhanStr = request.getParameter("soPhan");
         String maTacGiaStr = request.getParameter("maTacGia");
-        String biaSach = request.getParameter("biaSach");
-        String ngonNgu = request.getParameter("ngonNgu");
 
         // ---- Kiem tra hop le du lieu dau vao ----
         String loi = kiemTraHopLe(maSach, tenSach, giaBanStr, maTLStr, maNXBStr);
@@ -168,22 +176,13 @@ public class SachServlet extends HttpServlet {
             request.setAttribute("activeMenu", "sach");
             napDuLieuDropdown(request);
             // giu lai du lieu nguoi dung da nhap de khong phai go lai
-            request.setAttribute("sach", taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr, biaSach, ngonNgu));
+            request.setAttribute("sach", taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr));
             request.getRequestDispatcher("/view/sach-form.jsp").forward(request, response);
             return;
         }
 
-        Sach sach = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr, biaSach, ngonNgu);
+        Sach sach = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr);
         Integer maTacGia = (maTacGiaStr == null || maTacGiaStr.isEmpty()) ? null : Integer.valueOf(maTacGiaStr);
-
-        // ---- Xử lý ảnh bìa: ưu tiên file upload, fallback về hidden URL cũ ----
-        String anhBiaPath = xuLyUploadAnhBia(request, maSach);
-        if (anhBiaPath != null) {
-            sach.setAnhBia(anhBiaPath);
-        } else {
-            String anhBiaHidden = request.getParameter("anhBia");
-            sach.setAnhBia((anhBiaHidden != null && !anhBiaHidden.isBlank()) ? anhBiaHidden.trim() : null);
-        }
 
         try {
             if ("sua".equals(mode)) {
@@ -199,6 +198,8 @@ public class SachServlet extends HttpServlet {
                     request.getRequestDispatcher("/view/sach-form.jsp").forward(request, response);
                     return;
                 }
+                // Luu bien the kem theo (neu nguoi dung them khi tao moi sach)
+                luuBienTheTuForm(request, maSach.trim());
             }
         } catch (RuntimeException e) {
             request.setAttribute("thongBaoLoi", "Không thể lưu sách: " + e.getMessage());
@@ -228,15 +229,12 @@ public class SachServlet extends HttpServlet {
     }
 
     private Sach taoSachTuForm(String maSach, String tenSach, String namXBStr, String giaBanStr,
-                               String maTLStr, String maNXBStr, String maBoSachStr, String soPhanStr,
-                               String biaSach, String ngonNgu) {
+                               String maTLStr, String maNXBStr, String maBoSachStr, String soPhanStr) {
         Sach sach = new Sach();
         sach.setMaSach(maSach == null ? null : maSach.trim());
         sach.setTenSach(tenSach == null ? null : tenSach.trim());
         sach.setNamXB(chuoiSangSoNguyen(namXBStr));
         sach.setGiaBan(chuoiSangTien(giaBanStr));
-        sach.setBiaSach((biaSach == null || biaSach.isBlank()) ? null : biaSach.trim());
-        sach.setNgonNgu((ngonNgu == null || ngonNgu.isBlank()) ? null : ngonNgu.trim());
 
         if (maTLStr != null && !maTLStr.isEmpty()) {
             TheLoai tl = new TheLoai();
@@ -267,71 +265,12 @@ public class SachServlet extends HttpServlet {
         catch (NumberFormatException e) { return BigDecimal.ZERO; }
     }
 
-    /**
-     * Upload ảnh bìa theo MaSach (optional).
-     *
-     * @return path tương đối để hiển thị (ví dụ: uploads/books/S001.jpg), hoặc null nếu không upload.
-     */
-    private String xuLyUploadAnhBia(HttpServletRequest request, String maSach) throws ServletException, IOException {
-        try {
-            System.out.println("=== [UPLOAD START] maSach=" + maSach);
-
-            if (maSach == null || maSach.isBlank()) {
-                System.out.println("=== [UPLOAD] maSach null → return null");
-                return null;
-            }
-
-            Part part = request.getPart("anhBiaFile");
-            System.out.println("=== [UPLOAD] part=" + part + ", size=" + (part != null ? part.getSize() : "N/A") + ", fileName=" + (part != null ? part.getSubmittedFileName() : "N/A"));
-
-            if (part == null || part.getSize() <= 0) {
-                System.out.println("=== [UPLOAD] part null hoặc size=0 → return null");
-                return null;
-            }
-
-            String submitted = part.getSubmittedFileName();
-            if (submitted == null || submitted.isBlank()) {
-                System.out.println("=== [UPLOAD] fileName blank → return null");
-                return null;
-            }
-
-            String ext = "";
-            int dot = submitted.lastIndexOf('.');
-            if (dot >= 0 && dot < submitted.length() - 1) {
-                ext = submitted.substring(dot).toLowerCase();
-            }
-            System.out.println("=== [UPLOAD] ext=" + ext);
-
-            if (!ext.equals(".jpg") && !ext.equals(".jpeg")
-                    && !ext.equals(".png") && !ext.equals(".gif")
-                    && !ext.equals(".webp")) {
-                System.out.println("=== [UPLOAD] ext không hợp lệ → return null");
-                return null;
-            }
-
-            Path dirPath = Paths.get("D:/DoAn_NhomDuAn1/uploads/books");
-            Files.createDirectories(dirPath);
-
-            String fileName = maSach + ext;
-            Path target = dirPath.resolve(fileName);
-
-            try (InputStream in = part.getInputStream()) {
-                Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            System.out.println("=== [UPLOAD] THÀNH CÔNG: " + target.toAbsolutePath());
-            return "book-images/" + fileName;
-
-        } catch (ServletException | IOException e) {
-            System.out.println("=== [UPLOAD] EXCEPTION: " + e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            System.out.println("=== [UPLOAD] EXCEPTION: " + e.getMessage());
-            throw new ServletException("Upload thất bại: " + e.getMessage(), e);
-        }
-    }
-
     // ================================================================
+    /**
+     * Nut "Xoa" tren giao dien KHONG xoa cung ban ghi nua (se loi vi
+     * pham khoa ngoai FK_CTDH_Sach neu sach da tung ban) - chi cap nhat
+     * TrangThai = false (ngung kinh doanh).
+     */
     private void xuLyXoa(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String maSach = request.getParameter("ma");
         try {
@@ -357,6 +296,116 @@ public class SachServlet extends HttpServlet {
                 + (trang != null ? "page=" + trang : "page=1")
                 + (q != null && !q.isBlank() ? "&q=" + java.net.URLEncoder.encode(q, "UTF-8") : "");
         response.sendRedirect(redirect);
+    }
+
+    // ================================================================
+    // Quan ly Bien the sach (nam ngay trong man hinh sua Sach)
+    // ================================================================
+    private void xuLyThemBienThe(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String maSach = request.getParameter("maSach");
+        String loaiBia = request.getParameter("loaiBia");
+        String ngonNgu = request.getParameter("ngonNgu");
+        String maBienTheCode = request.getParameter("maBienTheCode");
+        String giaBanStr = request.getParameter("giaBanBienThe");
+
+        if (maBienTheCode == null || maBienTheCode.isBlank()) {
+            chuyenVeSuaVoiLoi(request, response, maSach, "Vui lòng nhập mã biến thể.");
+            return;
+        }
+        BigDecimal giaBan = chuoiSangTien(giaBanStr);
+        try {
+            boolean ok = bienTheDAO.insert(maSach, loaiBia, ngonNgu, maBienTheCode, giaBan);
+            if (!ok) {
+                chuyenVeSuaVoiLoi(request, response, maSach, "Mã biến thể \"" + maBienTheCode + "\" đã tồn tại.");
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/sach?action=edit&ma=" + maSach + "&luuBienThe=1");
+        } catch (Exception e) {
+            chuyenVeSuaVoiLoi(request, response, maSach, "Không thêm được biến thể: " + e.getMessage());
+        }
+    }
+
+    private void xuLySuaBienThe(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String maSach = request.getParameter("maSach");
+        Integer maBienThe = chuoiSangSoNguyen(request.getParameter("maBienThe"));
+        String loaiBia = request.getParameter("loaiBia");
+        String ngonNgu = request.getParameter("ngonNgu");
+        String maBienTheCode = request.getParameter("maBienTheCode");
+        BigDecimal giaBan = chuoiSangTien(request.getParameter("giaBanBienThe"));
+
+        if (maBienTheCode == null || maBienTheCode.isBlank()) {
+            chuyenVeSuaVoiLoi(request, response, maSach, "Vui lòng nhập mã biến thể.");
+            return;
+        }
+        try {
+            boolean ok = bienTheDAO.update(maBienThe, loaiBia, ngonNgu, maBienTheCode, giaBan);
+            if (!ok) {
+                chuyenVeSuaVoiLoi(request, response, maSach, "Mã biến thể \"" + maBienTheCode + "\" đã tồn tại.");
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/sach?action=edit&ma=" + maSach + "&luuBienThe=1");
+        } catch (Exception e) {
+            chuyenVeSuaVoiLoi(request, response, maSach, "Không sửa được biến thể: " + e.getMessage());
+        }
+    }
+
+    private void xuLyXoaBienThe(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String maSach = request.getParameter("maSach");
+        Integer maBienThe = chuoiSangSoNguyen(request.getParameter("maBienThe"));
+        boolean ok = bienTheDAO.delete(maBienThe);
+        if (ok) {
+            response.sendRedirect(request.getContextPath() + "/sach?action=edit&ma=" + maSach + "&xoaBienThe=1");
+        } else {
+            chuyenVeSuaVoiLoi(request, response, maSach,
+                    "Không thể xóa biến thể này vì đã có trong kho hoặc đã từng bán. Hãy dùng công tắc để ngừng bán thay vì xóa.");
+        }
+    }
+
+    private void xuLyToggleBienThe(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String maSach = request.getParameter("maSach");
+        Integer maBienThe = chuoiSangSoNguyen(request.getParameter("maBienThe"));
+        try {
+            bienTheDAO.doiTrangThai(maBienThe);
+        } catch (Exception ignored) {
+            // bo qua loi nho
+        }
+        response.sendRedirect(request.getContextPath() + "/sach?action=edit&ma=" + maSach);
+    }
+
+    /**
+     * Đọc danh sách biến thể được nhập trên form thêm mới sách.
+     * Các tham số có dạng mảng indexed:
+     *   btBia[0], btNgonNgu[0], btMaCode[0], btGia[0]
+     *   btBia[1], btNgonNgu[1], btMaCode[1], btGia[1] ...
+     * Bỏ qua dòng nào thiếu mã biến thể hoặc giá.
+     */
+    private void luuBienTheTuForm(HttpServletRequest request, String maSach) {
+        String[] arrBia    = request.getParameterValues("btBia");
+        String[] arrNgonNgu = request.getParameterValues("btNgonNgu");
+        String[] arrMaCode = request.getParameterValues("btMaCode");
+        String[] arrGia    = request.getParameterValues("btGia");
+
+        if (arrMaCode == null || arrMaCode.length == 0) return;
+
+        for (int i = 0; i < arrMaCode.length; i++) {
+            String maCode = arrMaCode[i];
+            if (maCode == null || maCode.isBlank()) continue;
+
+            String bia     = (arrBia     != null && i < arrBia.length)     ? arrBia[i]     : null;
+            String ngonNgu = (arrNgonNgu != null && i < arrNgonNgu.length)  ? arrNgonNgu[i] : null;
+            String giaStr  = (arrGia     != null && i < arrGia.length)      ? arrGia[i]     : null;
+            BigDecimal gia = chuoiSangTien(giaStr);
+            try {
+                bienTheDAO.insert(maSach, bia, ngonNgu, maCode.trim(), gia);
+            } catch (Exception ignored) {
+                // Bo qua loi 1 dong bien the, khong cancel toan bo
+            }
+        }
+    }
+
+    private void chuyenVeSuaVoiLoi(HttpServletRequest request, HttpServletResponse response, String maSach, String loi) throws IOException {
+        response.sendRedirect(request.getContextPath() + "/sach?action=edit&ma=" + maSach + "&loiBienThe="
+                + java.net.URLEncoder.encode(loi, "UTF-8"));
     }
 }
 

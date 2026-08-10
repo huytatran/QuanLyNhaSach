@@ -53,6 +53,14 @@ public class NhaXuatBanDAO {
     }
 
     public boolean insert(String tenNXB, String sdt, String diaChi) {
+        return insertAndGetId(tenNXB, sdt, diaChi) != null;
+    }
+
+    /**
+     * Them moi NXB va tra ve ID vua tao.
+     * @return ID moi neu thanh cong, null neu ten da ton tai
+     */
+    public Integer insertAndGetId(String tenNXB, String sdt, String diaChi) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
 
@@ -62,7 +70,7 @@ public class NhaXuatBanDAO {
                     .setParameter("ten", tenNXB.trim().toLowerCase())
                     .uniqueResult();
 
-            if (trung != null && trung > 0) return false;
+            if (trung != null && trung > 0) return null;
 
             tx = session.beginTransaction();
 
@@ -72,9 +80,8 @@ public class NhaXuatBanDAO {
             n.setDiaChi(diaChi);
 
             session.persist(n);
-
             tx.commit();
-            return true;
+            return n.getMaNXB();
 
         } catch (RuntimeException e) {
             if (tx != null) tx.rollback();

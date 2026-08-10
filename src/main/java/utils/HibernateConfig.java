@@ -1,4 +1,4 @@
-package utils;
+    package utils;
 
 import entity.*;
 import org.hibernate.SessionFactory;
@@ -41,6 +41,7 @@ public class HibernateConfig {
         conf.addAnnotatedClass(Voucher.class);
         conf.addAnnotatedClass(DiaChiKhachHang.class);
         conf.addAnnotatedClass(DanhGia.class);
+        conf.addAnnotatedClass(SachBienThe.class); // Biến thể sách (loại bìa, ngôn ngữ...)
         conf.setProperties(properties);
         ServiceRegistry registry = new StandardServiceRegistryBuilder()
                 .applySettings(conf.getProperties()).build();
