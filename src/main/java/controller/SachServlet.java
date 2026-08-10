@@ -26,6 +26,7 @@ import java.util.Map;
  *  POST /sach?action=delete&ma=... -> xoa
  */
 @WebServlet("/sach")
+@jakarta.servlet.annotation.MultipartConfig
 public class SachServlet extends HttpServlet {
 
     private final SachDAO sachDAO = new SachDAO();
@@ -183,6 +184,15 @@ public class SachServlet extends HttpServlet {
 
         Sach sach = taoSachTuForm(maSach, tenSach, namXBStr, giaBanStr, maTLStr, maNXBStr, maBoSachStr, soPhanStr);
         Integer maTacGia = (maTacGiaStr == null || maTacGiaStr.isEmpty()) ? null : Integer.valueOf(maTacGiaStr);
+
+        // ---- Xử lý ảnh bìa: ưu tiên file upload, fallback về hidden URL ----
+        String anhBiaPath = xuLyUploadAnhBia(request, maSach);
+        if (anhBiaPath != null) {
+            sach.setAnhBia(anhBiaPath);
+        } else {
+            String anhBiaHidden = request.getParameter("anhBia");
+            sach.setAnhBia((anhBiaHidden != null && !anhBiaHidden.isBlank()) ? anhBiaHidden.trim() : null);
+        }
 
         try {
             if ("sua".equals(mode)) {
@@ -406,6 +416,33 @@ public class SachServlet extends HttpServlet {
     private void chuyenVeSuaVoiLoi(HttpServletRequest request, HttpServletResponse response, String maSach, String loi) throws IOException {
         response.sendRedirect(request.getContextPath() + "/sach?action=edit&ma=" + maSach + "&loiBienThe="
                 + java.net.URLEncoder.encode(loi, "UTF-8"));
+    }
+
+    private String xuLyUploadAnhBia(HttpServletRequest request, String maSach) throws ServletException, IOException {
+        try {
+            if (maSach == null || maSach.isBlank()) return null;
+            jakarta.servlet.http.Part part = request.getPart("anhBiaFile");
+            if (part == null || part.getSize() <= 0) return null;
+            String submitted = part.getSubmittedFileName();
+            if (submitted == null || submitted.isBlank()) return null;
+            String ext = "";
+            int dot = submitted.lastIndexOf('.');
+            if (dot >= 0 && dot < submitted.length() - 1) ext = submitted.substring(dot).toLowerCase();
+            if (!ext.equals(".jpg") && !ext.equals(".jpeg") && !ext.equals(".png")
+                    && !ext.equals(".gif") && !ext.equals(".webp")) return null;
+            java.nio.file.Path dirPath = java.nio.file.Paths.get("D:/DoAn_NhomDuAn1/uploads/books");
+            java.nio.file.Files.createDirectories(dirPath);
+            String fileName = maSach + ext;
+            java.nio.file.Path target = dirPath.resolve(fileName);
+            try (java.io.InputStream in = part.getInputStream()) {
+                java.nio.file.Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+            System.out.println("[UPLOAD] OK: " + target.toAbsolutePath());
+            return "book-images/" + fileName;
+        } catch (Exception e) {
+            System.out.println("[UPLOAD] SKIP: " + e.getMessage());
+            return null;
+        }
     }
 }
 

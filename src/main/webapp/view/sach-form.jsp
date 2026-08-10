@@ -38,7 +38,7 @@
 
         <div class="card bg-white border" style="border-color: #e2e8f0; border-radius: 10px;">
             <div class="card-body p-4">
-                <form method="post" action="${pageContext.request.contextPath}/sach">
+                <form method="post" action="${pageContext.request.contextPath}/sach" enctype="multipart/form-data">
                     <input type="hidden" name="mode" value="${dangSua ? 'sua' : 'them'}">
                     <input type="hidden" name="action" value="save">
 
@@ -52,6 +52,33 @@
                         <div class="col-md-8">
                             <label class="form-label">Tên sách *</label>
                             <input type="text" name="tenSach" value="${sach.tenSach}" class="form-control" placeholder="Nhập tên sách" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Ảnh bìa</label>
+                            <div class="mb-2 text-center" id="previewContainer"
+                                 style="${not empty sach.anhBia ? '' : 'display:none'}">
+                                <img id="imgPreview"
+                                     src="${not empty sach.anhBia ? sach.anhBia : ''}"
+                                     alt="Ảnh bìa"
+                                     style="width:80px;height:105px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"
+                                     onerror="this.closest('#previewContainer').style.display='none'">
+                            </div>
+                            <label class="form-label mb-1" style="font-size:11.5px;color:#64748b;">① Chọn file từ máy</label>
+                            <input type="file" name="anhBiaFile" id="anhBiaFile"
+                                   accept="image/*" class="form-control form-control-sm mb-2"
+                                   onchange="previewAnhFile(this)">
+                            <label class="form-label mb-1" style="font-size:11.5px;color:#64748b;">② Hoặc dán URL ảnh</label>
+                            <div class="d-flex gap-1">
+                                <input type="text" id="anhBiaUrlInput" class="form-control form-control-sm"
+                                       placeholder="https://..."
+                                       value="${sach.anhBia}"
+                                       oninput="previewAnhUrl(this.value)">
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        style="white-space:nowrap;font-size:11px;"
+                                        onclick="apDungUrl()">Áp dụng</button>
+                            </div>
+                            <input type="hidden" name="anhBia" id="anhBiaHidden" value="${sach.anhBia}">
                         </div>
 
                         <div class="col-md-4">
@@ -324,6 +351,41 @@
         document.getElementById('fGiaBanBienThe').value = giaBan;
         document.getElementById('btnBienThe').innerHTML = '<i class="bi bi-check-lg"></i>';
         document.getElementById('fMaBienTheCode').scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    // Preview ảnh khi chọn file từ máy
+    function previewAnhFile(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                showPreview(e.target.result);
+                document.getElementById('anhBiaUrlInput').value = '';
+                document.getElementById('anhBiaHidden').value = '';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Preview khi nhập URL
+    function previewAnhUrl(url) {
+        if (url && url.startsWith('http')) showPreview(url);
+    }
+
+    // Áp dụng URL vào hidden field
+    function apDungUrl() {
+        const url = document.getElementById('anhBiaUrlInput').value.trim();
+        if (!url) return;
+        document.getElementById('anhBiaHidden').value = url;
+        document.getElementById('anhBiaFile').value = '';
+        showPreview(url);
+    }
+
+    function showPreview(src) {
+        const container = document.getElementById('previewContainer');
+        const img = document.getElementById('imgPreview');
+        img.src = src;
+        container.style.display = '';
+        img.onerror = function() { container.style.display = 'none'; };
     }
 
     // ---- Biến thể động khi THÊM MỚI sách ----
