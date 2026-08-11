@@ -31,6 +31,38 @@
             </div>
         </c:if>
 
+        <%-- Moi: loc theo ngay + ma don va xuat Excel, thay cho o tim kiem chung khong hoat dong tren trang nay --%>
+        <form method="get" action="${pageContext.request.contextPath}/don-hang" class="card bg-white border mb-3 p-3"
+              style="border-color:#e2e8f0;border-radius:10px;">
+            <div class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label mb-1" style="font-size:12px;">Từ ngày</label>
+                    <input type="date" name="tuNgay" value="${tuNgay}" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label mb-1" style="font-size:12px;">Đến ngày</label>
+                    <input type="date" name="denNgay" value="${denNgay}" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label mb-1" style="font-size:12px;">Mã đơn</label>
+                    <input type="number" name="maDon" value="${maDon}" placeholder="VD: 12" class="form-control form-control-sm" style="width:110px;">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label mb-1" style="font-size:12px;">Khách hàng</label>
+                    <input type="text" name="tenKH" value="${tenKH}" placeholder="Tên khách hàng" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Lọc</button>
+                    <a href="${pageContext.request.contextPath}/don-hang" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+                </div>
+                <div class="col-auto ms-auto">
+                    <button type="submit" name="action" value="export" class="btn btn-sm btn-success">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+                    </button>
+                </div>
+            </div>
+        </form>
+
         <div class="card bg-white border" style="border-color:#e2e8f0;border-radius:10px;">
             <div class="table-responsive">
                 <table class="table mb-0">
@@ -51,7 +83,7 @@
                         <tr>
                             <td class="ps-3 fw-semibold">#${dh.maDH}</td>
                             <td>
-                                ${dh.ngayLap}
+                                    ${dh.ngayLap}
                             </td>
                             <td>${dh.khachHang.tenKH}</td>
                             <td>${dh.nhanVien.tenNV}</td>
@@ -76,20 +108,26 @@
             </div>
         </div>
 
-        <%-- Moi: phan trang cho danh sach don hang --%>
+        <%-- Moi: phan trang cho danh sach don hang, giu nguyen bo loc ngay/ma don khi chuyen trang --%>
+        <c:url var="donHangBaseUrl" value="/don-hang">
+            <c:param name="tuNgay" value="${tuNgay}"/>
+            <c:param name="denNgay" value="${denNgay}"/>
+            <c:param name="maDon" value="${maDon}"/>
+            <c:param name="tenKH" value="${tenKH}"/>
+        </c:url>
         <c:if test="${tongSoTrang > 1}">
             <nav class="mt-3">
                 <ul class="pagination pagination-sm justify-content-center mb-0">
                     <li class="page-item ${trangHienTai <= 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="${pageContext.request.contextPath}/don-hang?trang=${trangHienTai - 1}">Trước</a>
+                        <a class="page-link" href="${donHangBaseUrl}&trang=${trangHienTai - 1}">Trước</a>
                     </li>
                     <c:forEach var="i" begin="1" end="${tongSoTrang}">
                         <li class="page-item ${i == trangHienTai ? 'active' : ''}">
-                            <a class="page-link" href="${pageContext.request.contextPath}/don-hang?trang=${i}">${i}</a>
+                            <a class="page-link" href="${donHangBaseUrl}&trang=${i}">${i}</a>
                         </li>
                     </c:forEach>
                     <li class="page-item ${trangHienTai >= tongSoTrang ? 'disabled' : ''}">
-                        <a class="page-link" href="${pageContext.request.contextPath}/don-hang?trang=${trangHienTai + 1}">Sau</a>
+                        <a class="page-link" href="${donHangBaseUrl}&trang=${trangHienTai + 1}">Sau</a>
                     </li>
                 </ul>
             </nav>
