@@ -216,6 +216,8 @@
             <fmt:formatNumber value="${tongTienPhaiTra}" pattern="#,##0"/> ₫
         </span>
                         </div>
+                        <%-- Giá trị tổng tiền phải trả để JS đọc --%>
+                        <span id="tongTienPhaiTraData" data-sotien="${tongTienPhaiTra}" style="display:none;"></span>
 
                         <%-- Form thanh toán --%>
                         <form method="post" action="${pageContext.request.contextPath}/pos">
@@ -280,9 +282,17 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label mb-1" style="font-size:12.5px;font-weight:600;color:#475569;">Thanh toán</label>
-                                <select name="phuongThuc" class="form-select" style="font-size:13.5px;">
+                                <select name="phuongThuc" id="selectPhuongThuc" class="form-select" style="font-size:13.5px;" onchange="onPhuongThucChange(this)">
                                     <option>Tiền mặt</option><option>Chuyển khoản</option><option>Thẻ</option>
                                 </select>
+                                <%-- Nút tạo QR chỉ hiện khi chọn Chuyển khoản --%>
+                                <div id="btnTaoQRWrapper" style="display:none;" class="mt-2">
+                                    <button type="button" class="btn btn-sm w-100 fw-semibold"
+                                            style="background:#0ea5e9;color:#fff;border-radius:7px;font-size:13px;"
+                                            onclick="moModalVietQR()">
+                                        <i class="bi bi-qr-code me-1"></i> Tạo mã QR chuyển khoản
+                                    </button>
+                                </div>
                             </div>
                             <button type="submit" name="action" value="checkout"
                                     class="btn w-100 text-white fw-semibold" style="background:#4f46e5;border-radius:8px;"
@@ -328,6 +338,59 @@
     <input type="hidden" name="maBienThe" id="fAddMaBienThe">
     <input type="hidden" name="maKH"      id="fAddMaKH">
 </form>
+
+<%-- ===== Modal VietQR ===== --%>
+<div class="modal fade" id="modalVietQR" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+        <div class="modal-content" style="border-radius:14px;border:none;box-shadow:0 12px 30px rgba(0,0,0,.15);">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div>
+                    <h6 class="fw-bold mb-0" style="color:#0f172a;">
+                        <i class="bi bi-qr-code me-2" style="color:#0ea5e9;"></i>QR Chuyển khoản
+                    </h6>
+                    <p class="text-muted mb-0 mt-1" style="font-size:12px;">Quét mã để chuyển khoản qua MB Bank</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="font-size:10px;"></button>
+            </div>
+            <div class="modal-body px-4 pb-4 pt-3 text-center">
+                <%-- Thông tin tài khoản --%>
+                <div class="mb-3 p-3" style="background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:12px;color:#64748b;">Ngân hàng</span>
+                        <span style="font-size:12.5px;font-weight:600;color:#0f172a;">MB Bank</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:12px;color:#64748b;">Số tài khoản</span>
+                        <span style="font-size:12.5px;font-weight:600;color:#0f172a;">0387772459</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:12px;color:#64748b;">Số tiền</span>
+                        <span id="qrSoTien" style="font-size:13px;font-weight:700;color:#4f46e5;"></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span style="font-size:12px;color:#64748b;">Nội dung</span>
+                        <span id="qrNoiDung" style="font-size:12.5px;font-weight:600;color:#0f172a;"></span>
+                    </div>
+                </div>
+                <%-- Ảnh QR --%>
+                <div id="qrLoadingSpinner" style="padding:40px 0;">
+                    <div class="spinner-border" style="color:#0ea5e9;width:2rem;height:2rem;" role="status">
+                        <span class="visually-hidden">Đang tạo QR...</span>
+                    </div>
+                    <p class="text-muted mt-2 mb-0" style="font-size:12px;">Đang tạo mã QR...</p>
+                </div>
+                <div id="qrImageWrapper" style="display:none;">
+                    <img id="qrImage" src="" alt="QR VietQR"
+                         style="width:220px;height:220px;border-radius:10px;border:3px solid #e0f2fe;"/>
+                    <p class="text-muted mt-2 mb-0" style="font-size:11.5px;">
+                        <i class="bi bi-phone me-1"></i>Mở app ngân hàng → quét QR để chuyển khoản tự động
+                    </p>
+                </div>
+                <div id="qrErrorMsg" style="display:none;" class="text-danger" style="font-size:12.5px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -422,6 +485,68 @@
             document.getElementById('newTenKH').value = '';
             document.getElementById('newSdtKH').value = '';
         }).catch(err=>alert('Lỗi: '+err));
+    }
+
+    // ---- VietQR ----
+    const VIETQR_BANK    = 'MB';
+    const VIETQR_ACCOUNT = '0387772459';
+    const VIETQR_NAME    = 'NHA%20SACH'; // Tên hiển thị trên QR (encode URL)
+
+    function onPhuongThucChange(sel) {
+        const wrapper = document.getElementById('btnTaoQRWrapper');
+        wrapper.style.display = sel.value === 'Chuyển khoản' ? 'block' : 'none';
+    }
+
+    // Tạo mã đơn hàng tạm (dùng timestamp để hiển thị trong QR trước khi checkout)
+    function genMaDonTam() {
+        const now = new Date();
+        const pad = n => String(n).padStart(2,'0');
+        return 'DH' + now.getFullYear().toString().slice(-2)
+            + pad(now.getMonth()+1) + pad(now.getDate())
+            + pad(now.getHours()) + pad(now.getMinutes());
+    }
+
+    function moModalVietQR() {
+        // Lấy số tiền phải trả từ data attribute (do JSP render)
+        const dataEl    = document.getElementById('tongTienPhaiTraData');
+        const soTienRaw = dataEl ? (parseInt(dataEl.dataset.sotien) || 0) : 0;
+
+        const maDonTam  = genMaDonTam();
+        const noiDung   = encodeURIComponent('TT don ' + maDonTam);
+        const soTienFmt = soTienRaw.toLocaleString('vi-VN') + ' ₫';
+
+        // Cập nhật thông tin hiển thị
+        document.getElementById('qrSoTien').textContent  = soTienFmt;
+        document.getElementById('qrNoiDung').textContent = 'TT don ' + maDonTam;
+
+        // Reset trạng thái loading
+        document.getElementById('qrLoadingSpinner').style.display = 'block';
+        document.getElementById('qrImageWrapper').style.display   = 'none';
+        document.getElementById('qrErrorMsg').style.display       = 'none';
+
+        // Hiện modal
+        new bootstrap.Modal(document.getElementById('modalVietQR')).show();
+
+        // Build URL VietQR (dùng template compact2 để có logo ngân hàng + số tiền)
+        const qrUrl = 'https://img.vietqr.io/image/'
+            + VIETQR_BANK + '-' + VIETQR_ACCOUNT + '-compact2.png'
+            + '?amount=' + soTienRaw
+            + '&addInfo=' + noiDung
+            + '&accountName=' + VIETQR_NAME;
+
+        // Load ảnh QR
+        const img = document.getElementById('qrImage');
+        img.onload = function() {
+            document.getElementById('qrLoadingSpinner').style.display = 'none';
+            document.getElementById('qrImageWrapper').style.display   = 'block';
+        };
+        img.onerror = function() {
+            document.getElementById('qrLoadingSpinner').style.display = 'none';
+            const errEl = document.getElementById('qrErrorMsg');
+            errEl.textContent = 'Không tải được mã QR. Vui lòng thử lại.';
+            errEl.style.display = 'block';
+        };
+        img.src = qrUrl;
     }
 </script>
 </body>
