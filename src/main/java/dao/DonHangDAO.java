@@ -52,25 +52,69 @@ public class DonHangDAO {
         }
     }
 
+    /** Moi: danh sach don hang co loc theo khoang ngay lap, ma don va ten khach hang, thay cho o tim kiem khong hoat dong. */
+    public List<DonHang> getAll(int trang, int soDongMoiTrang, java.time.LocalDate tuNgay,
+                                java.time.LocalDate denNgay, Integer maDon, String tenKH) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            var q = session.createQuery(buildHqlDonHang(tuNgay, denNgay, maDon, tenKH, false), DonHang.class);
+            ganThamSoLoc(q, tuNgay, denNgay, maDon, tenKH);
+            return q.setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    /** Moi: dem so don hang theo bo loc - dung de tinh phan trang khi loc. */
+    public long countAll(java.time.LocalDate tuNgay, java.time.LocalDate denNgay, Integer maDon, String tenKH) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            var q = session.createQuery(buildHqlDonHang(tuNgay, denNgay, maDon, tenKH, true), Long.class);
+            ganThamSoLoc(q, tuNgay, denNgay, maDon, tenKH);
+            Long c = q.uniqueResult();
+            return c == null ? 0 : c;
+        }
+    }
+
+    /** Moi: toan bo danh sach don hang theo bo loc, khong phan trang - dung de xuat Excel. */
+    public List<DonHang> getAllKhongPhanTrang(java.time.LocalDate tuNgay, java.time.LocalDate denNgay, Integer maDon, String tenKH) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            var q = session.createQuery(buildHqlDonHang(tuNgay, denNgay, maDon, tenKH, false), DonHang.class);
+            ganThamSoLoc(q, tuNgay, denNgay, maDon, tenKH);
+            return q.getResultList();
+        }
+    }
+
+    private String buildHqlDonHang(java.time.LocalDate tuNgay, java.time.LocalDate denNgay, Integer maDon, String tenKH, boolean dem) {
+        StringBuilder hql = new StringBuilder(dem
+                ? "SELECT COUNT(dh) FROM DonHang dh LEFT JOIN dh.khachHang kh "
+                : "SELECT DISTINCT dh FROM DonHang dh LEFT JOIN FETCH dh.khachHang kh LEFT JOIN FETCH dh.nhanVien ");
+        hql.append("WHERE 1=1 ");
+        if (tuNgay != null) hql.append("AND dh.ngayLap >= :tuNgay ");
+        if (denNgay != null) hql.append("AND dh.ngayLap < :denNgay ");
+        if (maDon != null) hql.append("AND dh.maDH = :maDon ");
+        if (tenKH != null && !tenKH.isBlank()) hql.append("AND LOWER(kh.tenKH) LIKE :tenKH ");
+        if (!dem) hql.append("ORDER BY dh.ngayLap DESC");
+        return hql.toString();
+    }
+
     /** Đơn đã giao (trangThai=1) còn cuốn chưa trả — dùng cho tab Đổi/Trả. */
     public List<DonHang> getAllCoTheDoiTra(int trang, int soDongMoiTrang) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             // Lấy maDH của các đơn còn SachVatLy trạng thái 'Đã bán'
             List<Integer> maDHList = session.createQuery(
-                    "SELECT DISTINCT sv.chiTietDonHang.donHang.maDH FROM SachVatLy sv " +
-                    "WHERE sv.trangThai = :tt",
-                    Integer.class)
+                            "SELECT DISTINCT sv.chiTietDonHang.donHang.maDH FROM SachVatLy sv " +
+                                    "WHERE UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
+                            Integer.class)
                     .setParameter("tt", DA_BAN)
                     .getResultList();
 
             if (maDHList.isEmpty()) return java.util.Collections.emptyList();
 
             return session.createQuery(
-                    "SELECT DISTINCT dh FROM DonHang dh " +
-                    "LEFT JOIN FETCH dh.khachHang " +
-                    "LEFT JOIN FETCH dh.nhanVien " +
-                    "WHERE dh.maDH IN :ids AND dh.trangThai = :tt " +
-                    "ORDER BY dh.ngayLap DESC", DonHang.class)
+                            "SELECT DISTINCT dh FROM DonHang dh " +
+                                    "LEFT JOIN FETCH dh.khachHang " +
+                                    "LEFT JOIN FETCH dh.nhanVien " +
+                                    "WHERE dh.maDH IN :ids AND dh.trangThai = :tt " +
+                                    "ORDER BY dh.ngayLap DESC", DonHang.class)
                     .setParameter("ids", maDHList)
                     .setParameter("tt", TRANG_THAI_DA_GIAO)
                     .setFirstResult((trang - 1) * soDongMoiTrang)
@@ -83,9 +127,9 @@ public class DonHangDAO {
     public long countCoTheDoiTra() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             Long c = session.createQuery(
-                    "SELECT COUNT(DISTINCT sv.chiTietDonHang.donHang.maDH) FROM SachVatLy sv " +
-                    "WHERE sv.trangThai = :tt AND sv.chiTietDonHang.donHang.trangThai = :trangThai",
-                    Long.class)
+                            "SELECT COUNT(DISTINCT sv.chiTietDonHang.donHang.maDH) FROM SachVatLy sv " +
+                                    "WHERE UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt)) AND sv.chiTietDonHang.donHang.trangThai = :trangThai",
+                            Long.class)
                     .setParameter("tt", DA_BAN)
                     .setParameter("trangThai", TRANG_THAI_DA_GIAO)
                     .uniqueResult();
@@ -93,15 +137,98 @@ public class DonHangDAO {
         }
     }
 
+    /** Moi: ban co loc theo ngay lap, ma don va ten khach hang, dung cho tab Doi/Tra. */
+    public List<DonHang> getAllCoTheDoiTra(int trang, int soDongMoiTrang, java.time.LocalDate tuNgay,
+                                           java.time.LocalDate denNgay, Integer maDon, String tenKH) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            List<Integer> maDHList = session.createQuery(
+                            "SELECT DISTINCT sv.chiTietDonHang.donHang.maDH FROM SachVatLy sv " +
+                                    "WHERE UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
+                            Integer.class)
+                    .setParameter("tt", DA_BAN)
+                    .getResultList();
+            if (maDHList.isEmpty()) return java.util.Collections.emptyList();
+
+            var q = session.createQuery(buildHqlCoTheDoiTra(tuNgay, denNgay, maDon, tenKH, false), DonHang.class)
+                    .setParameter("ids", maDHList)
+                    .setParameter("tt", TRANG_THAI_DA_GIAO);
+            ganThamSoLoc(q, tuNgay, denNgay, maDon, tenKH);
+            return q.setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    /** Moi: dem so don co the doi/tra co ap dung loc - dung de tinh phan trang khi loc. */
+    public long countCoTheDoiTra(java.time.LocalDate tuNgay, java.time.LocalDate denNgay, Integer maDon, String tenKH) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            List<Integer> maDHList = session.createQuery(
+                            "SELECT DISTINCT sv.chiTietDonHang.donHang.maDH FROM SachVatLy sv " +
+                                    "WHERE UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
+                            Integer.class)
+                    .setParameter("tt", DA_BAN)
+                    .getResultList();
+            if (maDHList.isEmpty()) return 0;
+
+            var q = session.createQuery(
+                            buildHqlCoTheDoiTra(tuNgay, denNgay, maDon, tenKH, true), Long.class)
+                    .setParameter("ids", maDHList)
+                    .setParameter("tt", TRANG_THAI_DA_GIAO);
+            ganThamSoLoc(q, tuNgay, denNgay, maDon, tenKH);
+            Long c = q.uniqueResult();
+            return c == null ? 0 : c;
+        }
+    }
+
+    /** Moi: toan bo danh sach don co the doi/tra theo bo loc, khong phan trang - dung de xuat Excel. */
+    public List<DonHang> getAllCoTheDoiTraKhongPhanTrang(java.time.LocalDate tuNgay, java.time.LocalDate denNgay, Integer maDon, String tenKH) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            List<Integer> maDHList = session.createQuery(
+                            "SELECT DISTINCT sv.chiTietDonHang.donHang.maDH FROM SachVatLy sv " +
+                                    "WHERE UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
+                            Integer.class)
+                    .setParameter("tt", DA_BAN)
+                    .getResultList();
+            if (maDHList.isEmpty()) return java.util.Collections.emptyList();
+
+            var q = session.createQuery(buildHqlCoTheDoiTra(tuNgay, denNgay, maDon, tenKH, false), DonHang.class)
+                    .setParameter("ids", maDHList)
+                    .setParameter("tt", TRANG_THAI_DA_GIAO);
+            ganThamSoLoc(q, tuNgay, denNgay, maDon, tenKH);
+            return q.getResultList();
+        }
+    }
+
+    private String buildHqlCoTheDoiTra(java.time.LocalDate tuNgay, java.time.LocalDate denNgay, Integer maDon, String tenKH, boolean dem) {
+        StringBuilder hql = new StringBuilder(dem
+                ? "SELECT COUNT(DISTINCT dh) FROM DonHang dh LEFT JOIN dh.khachHang kh "
+                : "SELECT DISTINCT dh FROM DonHang dh LEFT JOIN FETCH dh.khachHang kh LEFT JOIN FETCH dh.nhanVien ");
+        hql.append("WHERE dh.maDH IN :ids AND dh.trangThai = :tt ");
+        if (tuNgay != null) hql.append("AND dh.ngayLap >= :tuNgay ");
+        if (denNgay != null) hql.append("AND dh.ngayLap < :denNgay ");
+        if (maDon != null) hql.append("AND dh.maDH = :maDon ");
+        if (tenKH != null && !tenKH.isBlank()) hql.append("AND LOWER(kh.tenKH) LIKE :tenKH ");
+        if (!dem) hql.append("ORDER BY dh.ngayLap DESC");
+        return hql.toString();
+    }
+
+    private void ganThamSoLoc(org.hibernate.query.Query<?> q, java.time.LocalDate tuNgay,
+                              java.time.LocalDate denNgay, Integer maDon, String tenKH) {
+        if (tuNgay != null) q.setParameter("tuNgay", tuNgay.atStartOfDay());
+        if (denNgay != null) q.setParameter("denNgay", denNgay.plusDays(1).atStartOfDay());
+        if (maDon != null) q.setParameter("maDon", maDon);
+        if (tenKH != null && !tenKH.isBlank()) q.setParameter("tenKH", "%" + tenKH.trim().toLowerCase() + "%");
+    }
+
     /** Lấy các đơn đã đổi/trả hoàn tất (trangThai = 2). */
     public List<DonHang> getAllDaDoiTra() {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             return session.createQuery(
-                    "SELECT DISTINCT dh FROM DonHang dh " +
-                    "LEFT JOIN FETCH dh.khachHang " +
-                    "LEFT JOIN FETCH dh.nhanVien " +
-                    "WHERE dh.trangThai = :tt " +
-                    "ORDER BY dh.ngayLap DESC", DonHang.class)
+                            "SELECT DISTINCT dh FROM DonHang dh " +
+                                    "LEFT JOIN FETCH dh.khachHang " +
+                                    "LEFT JOIN FETCH dh.nhanVien " +
+                                    "WHERE dh.trangThai = :tt " +
+                                    "ORDER BY dh.ngayLap DESC", DonHang.class)
                     .setParameter("tt", TRANG_THAI_DA_TRA)
                     .getResultList();
         }
@@ -167,8 +294,8 @@ public class DonHangDAO {
 
                 // Lấy SachVatLy còn trong kho
                 java.util.List<SachVatLy> cuonCoSan = session.createQuery(
-                        "FROM SachVatLy sv WHERE sv.sach.maSach = :ma AND sv.trangThai = :tt",
-                        SachVatLy.class)
+                                "FROM SachVatLy sv WHERE sv.sach.maSach = :ma AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
+                                SachVatLy.class)
                         .setParameter("ma", item.getMaSach())
                         .setParameter("tt", CO_SAN)
                         .setMaxResults(soLuong)
@@ -212,7 +339,7 @@ public class DonHangDAO {
     }
 
     /**
-     * Tao don ban hang POS: 
+     * Tao don ban hang POS:
      * 1. Tao ban ghi DonHang
      * 2. Voi moi mon hang: Tao ChiTietDonHang + Cap nhat tung cuon SachVatLy tu 'Có sẵn' sang 'Đã bán'
      * @param gioHang map maSach -> soLuong
@@ -263,7 +390,7 @@ public class DonHangDAO {
 
                 // Tim cac cuon sach vat ly con trong kho de ban
                 List<SachVatLy> cuonCoSan = session.createQuery(
-                                "FROM SachVatLy sv WHERE sv.sach.maSach = :ma AND sv.trangThai = :tt",
+                                "FROM SachVatLy sv WHERE sv.sach.maSach = :ma AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
                                 SachVatLy.class)
                         .setParameter("ma", maSach)
                         .setParameter("tt", CO_SAN)
@@ -314,6 +441,11 @@ public class DonHangDAO {
      * (ban dau, so cuon nay luon bang dung ct.soLuong tu luc tao don).
      */
     public void traMon(Integer maCTDH, int soLuongTra) {
+        traMon(maCTDH, soLuongTra, null);
+    }
+
+    /** @param lyDo Không bắt buộc — có thể null/rỗng. */
+    public void traMon(Integer maCTDH, int soLuongTra, String lyDo) {
         if (maCTDH == null || soLuongTra <= 0) {
             throw new IllegalArgumentException("Yêu cầu trả hàng không hợp lệ.");
         }
@@ -328,7 +460,7 @@ public class DonHangDAO {
             }
 
             List<SachVatLy> cuonDaBan = session.createQuery(
-                            "FROM SachVatLy sv WHERE sv.chiTietDonHang.maCTDH = :ma AND sv.trangThai = :tt",
+                            "FROM SachVatLy sv WHERE sv.chiTietDonHang.maCTDH = :ma AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
                             SachVatLy.class)
                     .setParameter("ma", maCTDH)
                     .setParameter("tt", DA_BAN)
@@ -342,7 +474,19 @@ public class DonHangDAO {
             }
 
             DonHang dh = ct.getDonHang();
-            dh.setTongTien(dh.getTongTien().subtract(ct.getDonGia().multiply(BigDecimal.valueOf(soLuongTra))));
+            BigDecimal soTienHoan = ct.getDonGia().multiply(BigDecimal.valueOf(soLuongTra));
+            dh.setTongTien(dh.getTongTien().subtract(soTienHoan));
+
+            // Ghi lịch sử trả hàng
+            LichSuDoiTra ls = new LichSuDoiTra();
+            ls.setDonHang(dh);
+            ls.setLoaiGiaoDich("TRA");
+            ls.setNgayThucHien(LocalDateTime.now());
+            ls.setChiTietCu(ct);
+            ls.setSoLuongTra(soLuongTra);
+            ls.setChenhLechTien(soTienHoan.negate()); // am = cua hang hoan lai cho khach
+            ls.setLyDo(chuanHoaLyDo(lyDo));
+            session.persist(ls);
 
             capNhatTrangThaiNeuDaTraHet(session, dh);
             tx.commit();
@@ -361,6 +505,11 @@ public class DonHangDAO {
      * duoc suy ra dung nhu tren, tu SachVatLy.
      */
     public void doiMon(Integer maCTDH, int soLuongDoi, String maSachMoi) {
+        doiMon(maCTDH, soLuongDoi, maSachMoi, null);
+    }
+
+    /** @param lyDo Không bắt buộc — có thể null/rỗng. */
+    public void doiMon(Integer maCTDH, int soLuongDoi, String maSachMoi, String lyDo) {
         if (maCTDH == null || soLuongDoi <= 0 || maSachMoi == null || maSachMoi.isBlank()) {
             throw new IllegalArgumentException("Yêu cầu đổi hàng không hợp lệ.");
         }
@@ -392,7 +541,7 @@ public class DonHangDAO {
 
             // Sach moi phai con du hang trong kho
             List<SachVatLy> cuonSachMoi = session.createQuery(
-                            "FROM SachVatLy sv WHERE sv.sach.maSach = :ma AND sv.trangThai = :tt",
+                            "FROM SachVatLy sv WHERE sv.sach.maSach = :ma AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
                             SachVatLy.class)
                     .setParameter("ma", maSachMoi)
                     .setParameter("tt", CO_SAN)
@@ -405,7 +554,7 @@ public class DonHangDAO {
 
             // Hoan lai sach cu ve kho
             List<SachVatLy> cuonSachCu = session.createQuery(
-                            "FROM SachVatLy sv WHERE sv.chiTietDonHang.maCTDH = :ma AND sv.trangThai = :tt",
+                            "FROM SachVatLy sv WHERE sv.chiTietDonHang.maCTDH = :ma AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
                             SachVatLy.class)
                     .setParameter("ma", maCTDH)
                     .setParameter("tt", DA_BAN)
@@ -420,7 +569,14 @@ public class DonHangDAO {
 
             DonHang dh = ct.getDonHang();
 
-            // Tao dong chi tiet don hang MOI cho sach da doi toi (du lieu binh thuong, khong doi cau truc bang)
+            // Sua loi: doan code truoc day gia dinh bang ChiTietDonHang co UNIQUE(MaDH, MaSach)
+            // roi dung uniqueResultOptional() de tim dong trung va GOP so luong vao - nhung
+            // bang nay KHONG he co rang buoc UNIQUE do (kiem tra lai database_setup.sql va
+            // migration-doi-tra.sql). Neu don hang co san >= 2 dong cung mot sach (hoan toan
+            // hop le, vd khach mua/doi sach do nhieu lan truoc), uniqueResultOptional() nem
+            // NonUniqueResultException -> bi catch chung thanh "Khong the thuc hien thao tac."
+            // -> day chinh la nguyen nhan chinh khien nut "Doi" bi loi. Sua: luon tao dong
+            // ChiTietDonHang MOI cho lan doi nay, khong gop vao dong co san nua.
             ChiTietDonHang ctMoi = new ChiTietDonHang();
             ctMoi.setDonHang(dh);
             ctMoi.setSach(sachMoi);
@@ -435,7 +591,21 @@ public class DonHangDAO {
             }
 
             // Khach chi tra phan chenh lech (>= 0) vi da rang buoc gia moi >= gia cu
-            dh.setTongTien(dh.getTongTien().add(giaMoi.subtract(giaCu).multiply(BigDecimal.valueOf(soLuongDoi))));
+            BigDecimal chenhLech = giaMoi.subtract(giaCu).multiply(BigDecimal.valueOf(soLuongDoi));
+            dh.setTongTien(dh.getTongTien().add(chenhLech));
+
+            // Ghi lich su doi hang
+            LichSuDoiTra ls = new LichSuDoiTra();
+            ls.setDonHang(dh);
+            ls.setLoaiGiaoDich("DOI");
+            ls.setNgayThucHien(LocalDateTime.now());
+            ls.setChiTietCu(ct);
+            ls.setSoLuongTra(soLuongDoi);
+            ls.setSachMoi(sachMoi);
+            ls.setSoLuongMoi(soLuongDoi);
+            ls.setChenhLechTien(chenhLech);
+            ls.setLyDo(chuanHoaLyDo(lyDo));
+            session.persist(ls);
 
             capNhatTrangThaiNeuDaTraHet(session, dh);
             tx.commit();
@@ -454,7 +624,7 @@ public class DonHangDAO {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             List<Object[]> rows = session.createQuery(
                             "SELECT sv.chiTietDonHang.maCTDH, COUNT(sv) FROM SachVatLy sv " +
-                                    "WHERE sv.chiTietDonHang.donHang.maDH = :ma AND sv.trangThai = :tt " +
+                                    "WHERE sv.chiTietDonHang.donHang.maDH = :ma AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt)) " +
                                     "GROUP BY sv.chiTietDonHang.maCTDH",
                             Object[].class)
                     .setParameter("ma", maDH)
@@ -468,12 +638,31 @@ public class DonHangDAO {
         }
     }
 
+    /** Lich su doi/tra cua MOT don hang cu the - dung cho trang chi tiet don hang. */
+    public List<LichSuDoiTra> getLichSuDoiTraTheoDon(Integer maDH) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.createQuery(
+                            "SELECT ls FROM LichSuDoiTra ls " +
+                                    "LEFT JOIN FETCH ls.chiTietCu ct " +
+                                    "LEFT JOIN FETCH ct.sach " +
+                                    "LEFT JOIN FETCH ls.sachMoi " +
+                                    "WHERE ls.donHang.maDH = :maDH " +
+                                    "ORDER BY ls.ngayThucHien DESC", LichSuDoiTra.class)
+                    .setParameter("maDH", maDH)
+                    .getResultList();
+        }
+    }
+
+    private String chuanHoaLyDo(String lyDo) {
+        return (lyDo == null || lyDo.isBlank()) ? null : lyDo.trim();
+    }
+
     // Neu tat ca cac dong cua don khong con cuon nao o trang thai 'Đã bán' (da tra/doi het)
     // thi chuyen trang thai don sang "da tra" (tai su dung TRANG_THAI_DA_TRA co san).
     private void capNhatTrangThaiNeuDaTraHet(Session session, DonHang dh) {
         Long conLai = session.createQuery(
                         "SELECT COUNT(sv) FROM SachVatLy sv WHERE sv.chiTietDonHang.donHang.maDH = :ma " +
-                                "AND sv.trangThai = :tt", Long.class)
+                                "AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))", Long.class)
                 .setParameter("ma", dh.getMaDH())
                 .setParameter("tt", DA_BAN)
                 .uniqueResult();
