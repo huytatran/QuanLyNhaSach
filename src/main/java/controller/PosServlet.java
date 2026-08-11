@@ -295,6 +295,10 @@ public class PosServlet extends HttpServlet {
                 return;
             }
             NhanVien nv = (NhanVien) session.getAttribute("currentUser");
+            if (nv == null) {
+                chuyenVePOSVoiLoi(response, request, "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+                return;
+            }
             try {
                 BigDecimal tongTien  = tinhTong(gioHang);
                 BigDecimal soTienGiam = BigDecimal.ZERO;
@@ -319,6 +323,7 @@ public class PosServlet extends HttpServlet {
 
                 gioHang.clear();
                 session.removeAttribute("appliedVouchers");
+                session.removeAttribute("maKHSelected"); // reset khách để không chọn lại cho đơn tiếp
                 response.sendRedirect(request.getContextPath() + "/pos?thanhCong=" + maDH);
             } catch (Exception e) {
                 chuyenVePOSVoiLoi(response, request,

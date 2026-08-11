@@ -133,7 +133,8 @@
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold mb-0">Giỏ hàng</h6>
-                            <form method="post" action="${pageContext.request.contextPath}/pos">
+                            <form method="post" action="${pageContext.request.contextPath}/pos"
+                                  onsubmit="return confirm('Xóa toàn bộ giỏ hàng?')">
                                 <input type="hidden" name="action" value="clear">
                                 <button class="btn btn-link btn-sm text-danger text-decoration-none" style="font-size:12.5px;">Xóa giỏ</button>
                             </form>
@@ -267,7 +268,12 @@
                                         <option value="">-- Chọn mã voucher --</option>
                                         <c:forEach var="v" items="${dsVoucher}">
                                             <option value="${v.maCode}" <c:if test="${appliedVouchers.contains(v.maCode)}">disabled</c:if>>
-                                                    ${v.maCode} - Giảm ${v.loaiGiam == 1 ? v.giaTri.intValue() : 0}%/${v.loaiGiam == 2 ? v.giaTri.intValue() : 0}đ
+                                                    ${v.maCode} -
+                                                    <c:choose>
+                                                        <c:when test="${v.loaiGiam == 1}">Giảm ${v.giaTri.intValue()}%</c:when>
+                                                        <c:otherwise>Giảm <fmt:formatNumber value="${v.giaTri}" pattern="#,##0"/>đ</c:otherwise>
+                                                    </c:choose>
+                                                    (đơn từ <fmt:formatNumber value="${v.giaTriDonToiThieu}" pattern="#,##0"/>đ)
                                             </option>
                                         </c:forEach>
                                     </select>
@@ -283,6 +289,21 @@
                                 <select name="phuongThuc" class="form-select" style="font-size:13.5px;">
                                     <option>Tiền mặt</option><option>Chuyển khoản</option><option>Thẻ</option>
                                 </select>
+                            </div>
+
+                            <%-- Tiền khách đưa & Tiền thối --%>
+                            <div class="mb-3 p-2 rounded-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
+                                <div class="d-flex gap-2 align-items-center mb-2">
+                                    <label style="font-size:12.5px;font-weight:600;color:#475569;white-space:nowrap;min-width:90px;">Khách đưa (₫)</label>
+                                    <input type="number" id="tienKhachDua" class="form-control form-control-sm"
+                                           min="0" step="1000" placeholder="0"
+                                           oninput="tinhTienThoi()"
+                                           style="font-size:13px;">
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span style="font-size:12.5px;font-weight:600;color:#475569;">Tiền thối</span>
+                                    <span id="tienThoi" class="fw-bold" style="font-size:15px;color:#16a34a;">0 ₫</span>
+                                </div>
                             </div>
                             <button type="submit" name="action" value="checkout"
                                     class="btn w-100 text-white fw-semibold" style="background:#4f46e5;border-radius:8px;"
@@ -402,6 +423,21 @@
             + '<input type="hidden" name="maCode" value="' + maCode + '">'
             + '<input type="hidden" name="maKH"   value="' + selectKH.value + '">';
         document.body.appendChild(f); f.submit();
+    }
+
+    // ---- Tính tiền thối ----
+    const tongPhaiTra = ${tongTienPhaiTra};
+    function tinhTienThoi() {
+        const khachDua = parseFloat(document.getElementById('tienKhachDua').value) || 0;
+        const thoi = khachDua - tongPhaiTra;
+        const el = document.getElementById('tienThoi');
+        if (thoi < 0) {
+            el.textContent = 'Thiếu ' + Math.abs(thoi).toLocaleString('vi-VN') + ' ₫';
+            el.style.color = '#dc2626';
+        } else {
+            el.textContent = thoi.toLocaleString('vi-VN') + ' ₫';
+            el.style.color = '#16a34a';
+        }
     }
 
     // ---- Thêm khách hàng mới qua AJAX ----
