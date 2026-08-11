@@ -435,25 +435,52 @@
 
     /* ===== AJAX Actions ===== */
 
+    /* ===== Cập nhật tồn kho hiển thị trong bảng sách ===== */
+    function capNhatTonKho(cart) {
+        // Tính tổng số lượng đang trong giỏ theo maSach
+        const gioMap = {};
+        cart.forEach(function(item) {
+            gioMap[item.maSach] = (gioMap[item.maSach] || 0) + item.soLuong;
+        });
+        // Cập nhật cột Tồn trong bảng sách
+        document.querySelectorAll('#sachTableBody tr').forEach(function(row) {
+            const maCell = row.cells[1]; // cột Mã sách
+            if (!maCell) return;
+            const maSach = maCell.textContent.trim();
+            const tonCell = row.cells[4]; // cột Tồn
+            if (!tonCell) return;
+            const tonGoc = parseInt(tonCell.getAttribute('data-ton-goc') || tonCell.textContent.trim()) || 0;
+            if (!tonCell.hasAttribute('data-ton-goc')) {
+                tonCell.setAttribute('data-ton-goc', tonGoc);
+            }
+            const trongGio = gioMap[maSach] || 0;
+            const conLai = Math.max(0, tonGoc - trongGio);
+            tonCell.textContent = conLai;
+            // Disable nút thêm nếu hết hàng
+            const btn = row.querySelector('button.btn');
+            if (btn) btn.disabled = conLai === 0;
+        });
+    }
+
     function addToCart(maSach, maBienThe) {
         const p = new URLSearchParams();
         p.append('action', 'add');
         p.append('ma', maSach);
         if (maBienThe) p.append('maBienThe', maBienThe);
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho(data.cart); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function removeFromCart(key) {
         const p = new URLSearchParams();
         p.append('action', 'remove');
         p.append('key', key);
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho(data.cart); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function updateQty(key, qty) {
@@ -461,20 +488,20 @@
         p.append('action', 'update');
         p.append('key', key);
         p.append('soLuong', qty);
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho(data.cart); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function clearCart() {
         if (!confirm('Xóa toàn bộ giỏ hàng?')) return;
         const p = new URLSearchParams();
         p.append('action', 'clear');
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho([]); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function applyVoucher() {
@@ -539,41 +566,40 @@
                 return;
             }
             let html = '';
-            data.sachs.forEach(s => {
+            data.sachs.forEach(function(s) {
                 const ton = s.ton || 0;
                 const hasBT = s.bienThes && s.bienThes.length > 0;
                 const selectId = 'bt_' + s.maSach;
                 let giaHtml = '';
                 if (hasBT) {
-                    giaHtml = `<select id="${escHtml(selectId)}" class="form-select form-select-sm" style="font-size:12.5px;">`;
-                    s.bienThes.forEach(bt => {
-                        giaHtml += `<option value="${bt.maBienThe}" data-gia="${bt.giaBienThe}">${escHtml(bt.tenHienThi)}</option>`;
+                    giaHtml = '<select id="' + escHtml(selectId) + '" class="form-select form-select-sm" style="font-size:12.5px;">';
+                    s.bienThes.forEach(function(bt) {
+                        giaHtml += '<option value="' + bt.maBienThe + '" data-gia="' + bt.giaBienThe + '">' + escHtml(bt.tenHienThi) + '</option>';
                     });
                     giaHtml += '</select>';
                 } else {
-                    giaHtml = `<span style="font-size:13px;">${Math.round(s.giaBan).toLocaleString('vi-VN')} ₫</span>`;
+                    giaHtml = '<span style="font-size:13px;">' + Math.round(s.giaBan).toLocaleString('vi-VN') + ' \u20ab</span>';
                 }
                 const addCall = hasBT
-                    ? `addToCart('${escHtml(s.maSach)}', document.getElementById('${escHtml(selectId)}').value)`
-                    : `addToCart('${escHtml(s.maSach)}', '')`;
+                    ? 'addToCart(\'' + escHtml(s.maSach) + '\', document.getElementById(\'' + escHtml(selectId) + '\').value)'
+                    : 'addToCart(\'' + escHtml(s.maSach) + '\', \'\')';
                 const anhHtml = s.anhBia
-                    ? `<img src="${escHtml(s.anhBia)}" alt="${escHtml(s.tenSach)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-book\\' style=\\'color:#94a3b8;font-size:14px;\\'></i>'">`
+                    ? '<img src="' + escHtml(s.anhBia) + '" alt="' + escHtml(s.tenSach) + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML=\'<i class=\\\'bi bi-book\\\' style=\\\'color:#94a3b8;font-size:14px;\\\'></i>\'">'
                     : '<i class="bi bi-book" style="color:#94a3b8;font-size:14px;"></i>';
-                html += `<tr>
-                    <td class="ps-3" style="width:44px;">
-                        <div style="width:34px;height:44px;background:#f1f5f9;border-radius:5px;border:1px solid #e2e8f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">${anhHtml}</div>
-                    </td>
-                    <td class="fw-semibold">${escHtml(s.maSach)}</td>
-                    <td>${escHtml(s.tenSach)}</td>
-                    <td style="min-width:220px;">${giaHtml}</td>
-                    <td class="text-center">${ton}</td>
-                    <td class="text-end pe-3">
-                        <button class="btn btn-sm text-white" style="background:#4f46e5;border-radius:6px;"
-                                onclick="${addCall}" ${ton === 0 ? 'disabled' : ''}>
-                            <i class="bi bi-cart-plus"></i>
-                        </button>
-                    </td>
-                </tr>`;
+                html += '<tr>'
+                    + '<td class="ps-3" style="width:44px;">'
+                    + '<div style="width:34px;height:44px;background:#f1f5f9;border-radius:5px;border:1px solid #e2e8f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">' + anhHtml + '</div>'
+                    + '</td>'
+                    + '<td class="fw-semibold">' + escHtml(s.maSach) + '</td>'
+                    + '<td>' + escHtml(s.tenSach) + '</td>'
+                    + '<td style="min-width:220px;">' + giaHtml + '</td>'
+                    + '<td class="text-center">' + ton + '</td>'
+                    + '<td class="text-end pe-3">'
+                    + '<button class="btn btn-sm text-white" style="background:#4f46e5;border-radius:6px;" onclick="' + addCall + '" ' + (ton === 0 ? 'disabled' : '') + '>'
+                    + '<i class="bi bi-cart-plus"></i>'
+                    + '</button>'
+                    + '</td>'
+                    + '</tr>';
             });
             tbody.innerHTML = html;
         }).catch(e => showAlert('Lỗi tìm kiếm: ' + e, 'error'));
