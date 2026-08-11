@@ -43,6 +43,16 @@ public class PosServlet extends HttpServlet {
         HttpSession session = request.getSession();
         Map<String, CartItem> gioHang = layGioHang(session);
 
+        // Trừ số lượng đang trong giỏ khỏi tồn kho hiển thị
+        // → nhân viên thấy ngay tồn kho "còn lại thực tế" khi đang chọn hàng
+        Map<String, Long> tonKhoHienThi = new java.util.HashMap<>(tonKho);
+        for (CartItem item : gioHang.values()) {
+            String maSach = item.getMaSach();
+            long tonHienTai = tonKhoHienThi.getOrDefault(maSach, 0L);
+            long conLai = Math.max(0L, tonHienTai - item.getSoLuong());
+            tonKhoHienThi.put(maSach, conLai);
+        }
+
         // Gắn danh sách biến thể đang bán cho từng đầu sách (dùng trong POS để chọn)
         Map<String, List<SachBienThe>> bienTheMap = new LinkedHashMap<>();
         for (Sach s : danhSach) {
@@ -52,7 +62,7 @@ public class PosServlet extends HttpServlet {
         request.setAttribute("bienTheMap", bienTheMap);
 
         request.setAttribute("danhSachSach", danhSach);
-        request.setAttribute("tonKhoMap", tonKho);
+        request.setAttribute("tonKhoMap", tonKhoHienThi);
         request.setAttribute("dsKhachHang", khachHangDAO.getAll());
 
         // Voucher
