@@ -47,15 +47,10 @@ public class NhapKhoServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
-        // Lay thong tin tu form nhap kho
-        String maSach = request.getParameter("maSach");
-        String danhSachSerial = request.getParameter("danhSachSerial"); // Chuoi cac serial cach nhau boi dau phay hoac xuong dong
 
-        if (maSach == null || danhSachSerial == null || danhSachSerial.isBlank()) {
-            doGet(request, response);
-            return;
-        }
+        request.setCharacterEncoding("UTF-8");
+        String action  = request.getParameter("action");
+        String maSach  = request.getParameter("maSach");
 
         Sach sach = sachDAO.getById(maSach);
         if (sach == null) {
@@ -63,31 +58,64 @@ public class NhapKhoServlet extends HttpServlet {
             return;
         }
 
-        // Xu ly chuoi serial nguoi dung nhap (tach theo dong hoac dau phay)
+        // ---- Nhập nhanh theo số lượng ----
+        if ("nhapNhanh".equals(action)) {
+            String soLuongStr = request.getParameter("soLuong");
+            int soLuong;
+            try { soLuong = Integer.parseInt(soLuongStr.trim()); }
+            catch (Exception e) { soLuong = 0; }
+
+            if (soLuong <= 0) {
+                response.sendRedirect(request.getContextPath() + "/sach?loiNhapKho="
+                        + java.net.URLEncoder.encode("Số lượng phải lớn hơn 0.", "UTF-8"));
+                return;
+            }
+
+            // Tìm số serial hiện có lớn nhất để tiếp tục đánh số
+            List<SachVatLy> daDuaVao = sachVatLyDAO.getByMaSach(maSach);
+            int sttBatDau = daDuaVao.size() + 1;
+
+            List<SachVatLy> listToInsert = new ArrayList<>();
+            for (int i = 0; i < soLuong; i++) {
+                SachVatLy sv = new SachVatLy();
+                sv.setMaSerial(maSach + "-" + String.format("%04d", sttBatDau + i));
+                sv.setSach(sach);
+                sv.setTrangThai("Có sẵn");
+                listToInsert.add(sv);
+            }
+            try {
+                sachVatLyDAO.insertBatch(listToInsert);
+                response.sendRedirect(request.getContextPath() + "/sach?nhapKhoThanhCong=1");
+            } catch (Exception e) {
+                response.sendRedirect(request.getContextPath() + "/sach?loiNhapKho="
+                        + java.net.URLEncoder.encode("Lỗi nhập kho: " + e.getMessage(), "UTF-8"));
+            }
+            return;
+        }
+
+        // ---- Nhập theo danh sách serial ----
+        String danhSachSerial = request.getParameter("danhSachSerial");
+        if (danhSachSerial == null || danhSachSerial.isBlank()) {
+            doGet(request, response);
+            return;
+        }
+
         String[] lines = danhSachSerial.split("[\\r\\n,]+");
         List<SachVatLy> listToInsert = new ArrayList<>();
-        
         for (String s : lines) {
             String serial = s.trim();
             if (!serial.isEmpty()) {
-                // Tao doi tuong sach vat ly moi cho moi ma serial
                 SachVatLy sv = new SachVatLy();
                 sv.setMaSerial(serial);
                 sv.setSach(sach);
-                sv.setTrangThai("Có sẵn"); // Trang thai mac dinh khi nhap kho
+                sv.setTrangThai("Có sẵn");
                 listToInsert.add(sv);
             }
         }
-
         try {
-            // Goi DAO de thuc hien insert hang loat vao database
-            if (!listToInsert.isEmpty()) {
-                sachVatLyDAO.insertBatch(listToInsert);
-            }
-            // Chuyen huong ve danh sach kem thong bao thanh cong
+            if (!listToInsert.isEmpty()) sachVatLyDAO.insertBatch(listToInsert);
             response.sendRedirect(request.getContextPath() + "/sach?nhapKhoThanhCong=1");
         } catch (Exception e) {
-            // Neu co loi (vi du trung ma serial) thi hien thi lai trang nhap kem thong bao loi
             request.setAttribute("thongBaoLoi", "Lỗi khi nhập kho: " + e.getMessage());
             request.setAttribute("sach", sach);
             request.getRequestDispatcher("/view/nhap-kho.jsp").forward(request, response);
