@@ -53,6 +53,15 @@ public class PosServlet extends HttpServlet {
             tonKhoHienThi.put(maSach, conLai);
         }
 
+        // Sắp xếp: sách còn hàng lên trên, hết hàng xuống dưới
+        danhSach.sort((a, b) -> {
+            long tonA = tonKhoHienThi.getOrDefault(a.getMaSach(), 0L);
+            long tonB = tonKhoHienThi.getOrDefault(b.getMaSach(), 0L);
+            if (tonA > 0 && tonB == 0) return -1;
+            if (tonA == 0 && tonB > 0) return 1;
+            return a.getMaSach().compareTo(b.getMaSach());
+        });
+
         // Gắn danh sách biến thể đang bán cho từng đầu sách (dùng trong POS để chọn)
         Map<String, List<SachBienThe>> bienTheMap = new LinkedHashMap<>();
         for (Sach s : danhSach) {
