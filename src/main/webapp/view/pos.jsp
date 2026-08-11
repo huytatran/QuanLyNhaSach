@@ -539,41 +539,40 @@
                 return;
             }
             let html = '';
-            data.sachs.forEach(s => {
+            data.sachs.forEach(function(s) {
                 const ton = s.ton || 0;
                 const hasBT = s.bienThes && s.bienThes.length > 0;
                 const selectId = 'bt_' + s.maSach;
                 let giaHtml = '';
                 if (hasBT) {
-                    giaHtml = `<select id="${escHtml(selectId)}" class="form-select form-select-sm" style="font-size:12.5px;">`;
-                    s.bienThes.forEach(bt => {
-                        giaHtml += `<option value="${bt.maBienThe}" data-gia="${bt.giaBienThe}">${escHtml(bt.tenHienThi)}</option>`;
+                    giaHtml = '<select id="' + escHtml(selectId) + '" class="form-select form-select-sm" style="font-size:12.5px;">';
+                    s.bienThes.forEach(function(bt) {
+                        giaHtml += '<option value="' + bt.maBienThe + '" data-gia="' + bt.giaBienThe + '">' + escHtml(bt.tenHienThi) + '</option>';
                     });
                     giaHtml += '</select>';
                 } else {
-                    giaHtml = `<span style="font-size:13px;">${Math.round(s.giaBan).toLocaleString('vi-VN')} ₫</span>`;
+                    giaHtml = '<span style="font-size:13px;">' + Math.round(s.giaBan).toLocaleString('vi-VN') + ' \u20ab</span>';
                 }
                 const addCall = hasBT
-                    ? `addToCart('${escHtml(s.maSach)}', document.getElementById('${escHtml(selectId)}').value)`
-                    : `addToCart('${escHtml(s.maSach)}', '')`;
+                    ? 'addToCart(\'' + escHtml(s.maSach) + '\', document.getElementById(\'' + escHtml(selectId) + '\').value)'
+                    : 'addToCart(\'' + escHtml(s.maSach) + '\', \'\')';
                 const anhHtml = s.anhBia
-                    ? `<img src="${escHtml(s.anhBia)}" alt="${escHtml(s.tenSach)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-book\\' style=\\'color:#94a3b8;font-size:14px;\\'></i>'">`
+                    ? '<img src="' + escHtml(s.anhBia) + '" alt="' + escHtml(s.tenSach) + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML=\'<i class=\\\'bi bi-book\\\' style=\\\'color:#94a3b8;font-size:14px;\\\'></i>\'">'
                     : '<i class="bi bi-book" style="color:#94a3b8;font-size:14px;"></i>';
-                html += `<tr>
-                    <td class="ps-3" style="width:44px;">
-                        <div style="width:34px;height:44px;background:#f1f5f9;border-radius:5px;border:1px solid #e2e8f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">${anhHtml}</div>
-                    </td>
-                    <td class="fw-semibold">${escHtml(s.maSach)}</td>
-                    <td>${escHtml(s.tenSach)}</td>
-                    <td style="min-width:220px;">${giaHtml}</td>
-                    <td class="text-center">${ton}</td>
-                    <td class="text-end pe-3">
-                        <button class="btn btn-sm text-white" style="background:#4f46e5;border-radius:6px;"
-                                onclick="${addCall}" ${ton === 0 ? 'disabled' : ''}>
-                            <i class="bi bi-cart-plus"></i>
-                        </button>
-                    </td>
-                </tr>`;
+                html += '<tr>'
+                    + '<td class="ps-3" style="width:44px;">'
+                    + '<div style="width:34px;height:44px;background:#f1f5f9;border-radius:5px;border:1px solid #e2e8f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">' + anhHtml + '</div>'
+                    + '</td>'
+                    + '<td class="fw-semibold">' + escHtml(s.maSach) + '</td>'
+                    + '<td>' + escHtml(s.tenSach) + '</td>'
+                    + '<td style="min-width:220px;">' + giaHtml + '</td>'
+                    + '<td class="text-center">' + ton + '</td>'
+                    + '<td class="text-end pe-3">'
+                    + '<button class="btn btn-sm text-white" style="background:#4f46e5;border-radius:6px;" onclick="' + addCall + '" ' + (ton === 0 ? 'disabled' : '') + '>'
+                    + '<i class="bi bi-cart-plus"></i>'
+                    + '</button>'
+                    + '</td>'
+                    + '</tr>';
             });
             tbody.innerHTML = html;
         }).catch(e => showAlert('Lỗi tìm kiếm: ' + e, 'error'));
