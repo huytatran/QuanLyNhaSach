@@ -139,10 +139,6 @@ public class DonHangServlet extends HttpServlet {
                 String tenSach = request.getParameter("tenSach");
                 donHangDAO.doiMon(maCTDH, soLuong, maSachMoi, lyDo);
                 redirectPhieuInDoiTra(request, response, maDH, "DOI", tenSach, soLuong, maSachMoi);
-            } else if ("gui-email".equals(action)) {
-                // Moi: gui hoa don qua email cho khach hang, xem trong trang chi tiet don hang
-                guiHoaDonQuaEmail(maDH);
-                redirectWithMessage(request, response, maDH, "Đã gửi hóa đơn qua email cho khách hàng.");
             } else {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
@@ -178,17 +174,6 @@ public class DonHangServlet extends HttpServlet {
                                  java.time.LocalDate denNgay, Integer maDon, String tenKH) throws IOException {
         List<entity.DonHang> danhSach = donHangDAO.getAllCoTheDoiTraKhongPhanTrang(tuNgay, denNgay, maDon, tenKH);
         ghiDanhSachDonHangRaExcel(response, danhSach, "don-hang-doi-tra.xlsx");
-    }
-
-    // Moi: gui hoa don qua email cho khach hang cua don hang - xem nut trong don-hang-chi-tiet.jsp
-    private void guiHoaDonQuaEmail(Integer maDH) throws Exception {
-        if (maDH == null) throw new IllegalArgumentException("Thiếu mã đơn hàng.");
-        DonHang dh = donHangDAO.getById(maDH);
-        if (dh == null) throw new IllegalArgumentException("Không tìm thấy đơn hàng.");
-        if (dh.getKhachHang() == null || dh.getKhachHang().getEmail() == null || dh.getKhachHang().getEmail().isBlank()) {
-            throw new IllegalArgumentException("Khách hàng của đơn này chưa có email.");
-        }
-        utils.MailUtil.guiHoaDon(dh);
     }
 
     private void ghiDanhSachDonHangRaExcel(HttpServletResponse response, List<entity.DonHang> danhSach,

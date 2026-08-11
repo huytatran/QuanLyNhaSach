@@ -41,6 +41,7 @@ public class HibernateConfig {
         conf.addAnnotatedClass(Voucher.class);
         conf.addAnnotatedClass(DiaChiKhachHang.class);
         conf.addAnnotatedClass(DanhGia.class);
+        conf.addAnnotatedClass(LichSuDoiTra.class);
         conf.addAnnotatedClass(SachBienThe.class); // Biến thể sách (loại bìa, ngôn ngữ...)
         conf.setProperties(properties);
         ServiceRegistry registry = new StandardServiceRegistryBuilder()
