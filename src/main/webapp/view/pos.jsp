@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" deferredSyntaxAllowedAsLiteral="true" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <html>
@@ -366,29 +366,28 @@
         }
         document.getElementById('btnCheckout').disabled = false;
         let html = '';
-        cart.forEach(item => {
-            html += `<div class="border-bottom py-2 cart-item-row" data-key="${escHtml(item.key)}" style="border-color:#e2e8f0 !important;">
-                <div class="d-flex gap-2 align-items-start">
-                    <div style="flex-shrink:0;width:60px;height:80px;background:#f1f5f9;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                        ${item.anhBia
-                            ? `<img src="${escHtml(item.anhBia)}" alt="${escHtml(item.tenSach)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<i class=\\'bi bi-book\\' style=\\'color:#94a3b8;font-size:20px;\\'></i>'">`
-                            : '<i class="bi bi-book" style="color:#94a3b8;font-size:20px;"></i>'}
-                    </div>
-                    <div class="flex-grow-1 overflow-hidden">
-                        <div class="fw-semibold text-truncate" style="font-size:13px;">${escHtml(item.tenSach)}</div>
-                        ${item.tenBienThe ? `<div style="font-size:11px;color:#7c3aed;margin-bottom:1px;"><i class="bi bi-tag-fill me-1"></i>${escHtml(item.tenBienThe)}</div>` : ''}
-                        <div class="text-muted" style="font-size:12px;">${fmtMoney(item.donGia)} / cuốn</div>
-                        <div class="d-flex align-items-center gap-1 mt-1">
-                            <input type="number" value="${item.soLuong}" min="1"
-                                   class="form-control form-control-sm" style="width:58px;font-size:12px;"
-                                   onchange="updateQty('${escHtml(item.key)}', this.value)">
-                            <button class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:2px 7px;"
-                                    onclick="removeFromCart('${escHtml(item.key)}')"><i class="bi bi-trash"></i></button>
-                        </div>
-                    </div>
-                    <div class="text-end fw-semibold" style="font-size:13px;white-space:nowrap;flex-shrink:0;">${fmtMoney(item.thanhTien)}</div>
-                </div>
-            </div>`;
+        cart.forEach(function(item) {
+            const anhHtml = item.anhBia
+                ? '<img src="' + escHtml(item.anhBia) + '" alt="' + escHtml(item.tenSach) + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML=\'<i class=\\\'bi bi-book\\\' style=\\\'color:#94a3b8;font-size:20px;\\\'></i>\'">'
+                : '<i class="bi bi-book" style="color:#94a3b8;font-size:20px;"></i>';
+            const btHtml = item.tenBienThe
+                ? '<div style="font-size:11px;color:#7c3aed;margin-bottom:1px;"><i class="bi bi-tag-fill me-1"></i>' + escHtml(item.tenBienThe) + '</div>'
+                : '';
+            html += '<div class="border-bottom py-2 cart-item-row" data-key="' + escHtml(item.key) + '" style="border-color:#e2e8f0 !important;">'
+                + '<div class="d-flex gap-2 align-items-start">'
+                + '<div style="flex-shrink:0;width:60px;height:80px;background:#f1f5f9;border-radius:6px;border:1px solid #e2e8f0;overflow:hidden;display:flex;align-items:center;justify-content:center;">' + anhHtml + '</div>'
+                + '<div class="flex-grow-1 overflow-hidden">'
+                + '<div class="fw-semibold text-truncate" style="font-size:13px;">' + escHtml(item.tenSach) + '</div>'
+                + btHtml
+                + '<div class="text-muted" style="font-size:12px;">' + fmtMoney(item.donGia) + ' / cu\u1ed1n</div>'
+                + '<div class="d-flex align-items-center gap-1 mt-1">'
+                + '<input type="number" value="' + item.soLuong + '" min="1" class="form-control form-control-sm" style="width:58px;font-size:12px;" onchange="updateQty(\'' + escHtml(item.key) + '\', this.value)">'
+                + '<button class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:2px 7px;" onclick="removeFromCart(\'' + escHtml(item.key) + '\')"><i class="bi bi-trash"></i></button>'
+                + '</div>'
+                + '</div>'
+                + '<div class="text-end fw-semibold" style="font-size:13px;white-space:nowrap;flex-shrink:0;">' + fmtMoney(item.thanhTien) + '</div>'
+                + '</div>'
+                + '</div>';
         });
         container.innerHTML = html;
     }
@@ -413,13 +412,13 @@
         if (appliedVouchers.length > 0) {
             listDiv.style.display = '';
             document.getElementById('btnCancelVouchers').style.display = '';
-            itemsDiv.innerHTML = appliedVouchers.map(vc =>
-                `<div class="d-flex justify-content-between align-items-center mb-1">
-                    <span style="font-size:12px;">${escHtml(vc)}</span>
-                    <button class="btn btn-sm btn-link p-0 text-danger" style="font-size:11px;text-decoration:none;"
-                            onclick="removeVoucher('${escHtml(vc)}')"><i class="bi bi-x-lg"></i></button>
-                </div>`
-            ).join('');
+            itemsDiv.innerHTML = appliedVouchers.map(function(vc) {
+                return '<div class="d-flex justify-content-between align-items-center mb-1">'
+                    + '<span style="font-size:12px;">' + escHtml(vc) + '</span>'
+                    + '<button class="btn btn-sm btn-link p-0 text-danger" style="font-size:11px;text-decoration:none;"'
+                    + ' onclick="removeVoucher(\'' + escHtml(vc) + '\')"><i class="bi bi-x-lg"></i></button>'
+                    + '</div>';
+            }).join('');
         } else {
             listDiv.style.display = 'none';
             document.getElementById('btnCancelVouchers').style.display = 'none';
