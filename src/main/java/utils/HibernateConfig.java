@@ -20,7 +20,7 @@ public class HibernateConfig {
         properties.put(Environment.DRIVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
         properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
         properties.put(Environment.USER, "sa");
-        properties.put(Environment.PASS, "123456");
+        properties.put(Environment.PASS, "bao11022007");
         properties.put(Environment.SHOW_SQL, "true");
 
         /*Ht272705
@@ -41,7 +41,7 @@ public class HibernateConfig {
         conf.addAnnotatedClass(Voucher.class);
         conf.addAnnotatedClass(DiaChiKhachHang.class);
         conf.addAnnotatedClass(DanhGia.class);
-        conf.addAnnotatedClass(LichSuDoiTra.class); // chưa biết sao nó lỗi
+        conf.addAnnotatedClass(LichSuDoiTra.class);
         conf.addAnnotatedClass(SachBienThe.class); // Biến thể sách (loại bìa, ngôn ngữ...)
         conf.setProperties(properties);
         ServiceRegistry registry = new StandardServiceRegistryBuilder()
