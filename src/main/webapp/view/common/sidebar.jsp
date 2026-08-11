@@ -122,7 +122,6 @@
             </div>
         </li>
 
-        <!-- Đã sửa đường link cho chuẩn với VoucherServlet -->
         <li class="nav-item mb-1">
             <a href="${pageContext.request.contextPath}/voucher/hien-thi"
                class="nav-link d-flex align-items-center ${activeMenu == 'voucher' ? 'text-white' : 'text-white-50 hover-menu'}"
@@ -143,13 +142,41 @@
             <li class="nav-item mt-4 mb-2">
                 <span class="text-uppercase px-3" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Hệ thống</span>
             </li>
+
+            <%-- MENU QUẢN LÝ NHÂN VIÊN (DẠNG COLLAPSE) --%>
             <li class="nav-item mb-1">
-                <a href="${pageContext.request.contextPath}/nhanvien"
-                   class="nav-link d-flex align-items-center ${activeMenu == 'nhanvien' ? 'text-white' : 'text-white-50 hover-menu'}"
-                   style="${activeMenu == 'nhanvien' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
-                    <i class="bi bi-shield-lock-fill me-2"></i> Quản lý Nhân Viên
+                <a href="#submenuNhanVien" data-bs-toggle="collapse"
+                   class="nav-link d-flex align-items-center justify-content-between
+                          ${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'text-white' : 'text-white-50 hover-menu'}"
+                   style="${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}"
+                   aria-expanded="${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'true' : 'false'}">
+                    <span><i class="bi bi-shield-lock-fill me-2"></i> Quản lý Nhân Viên</span>
+                    <i class="bi bi-chevron-down" id="chevronNhanVien"
+                       style="font-size:11px;transition:transform 0.2s;
+                              transform:${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'rotate(180deg)' : 'rotate(0deg)'}"></i>
                 </a>
+                <div class="collapse ${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'show' : ''}" id="submenuNhanVien">
+                    <ul class="nav flex-column ps-3 mt-1" style="gap:2px;">
+                        <li class="nav-item mb-1">
+                            <a href="${pageContext.request.contextPath}/nhanvien"
+                               class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'nhanvien' ? 'text-white fw-semibold' : ''}"
+                               style="font-size:13px;border-radius:8px;">Danh sách nhân viên</a>
+                        </li>
+                        <li class="nav-item mb-1">
+                            <a href="${pageContext.request.contextPath}/giaoca"
+                               class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'giaoca' ? 'text-white fw-semibold' : ''}"
+                               style="font-size:13px;border-radius:8px;">Giao ca</a>
+                        </li>
+                        <li class="nav-item mb-1">
+                            <a href="${pageContext.request.contextPath}/lichlamviec"
+                               class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'lichlamviec' ? 'text-white fw-semibold' : ''}"
+                               style="font-size:13px;border-radius:8px;">Lịch làm việc</a>
+                        </li>
+                    </ul>
+                </div>
             </li>
+            <%-- KẾT THÚC MENU NHÂN VIÊN --%>
+
             <li class="nav-item mb-1">
                 <a href="${pageContext.request.contextPath}/baocao"
                    class="nav-link d-flex align-items-center ${activeMenu == 'baocao' ? 'text-white' : 'text-white-50 hover-menu'}"
@@ -202,8 +229,8 @@
         });
     })();
 
-    // Xoay mũi tên khi mở/đóng submenu Thuộc tính sách
     document.addEventListener('DOMContentLoaded', function() {
+        // Xoay mũi tên submenu Thuộc tính sách
         var submenu = document.getElementById('submenuDanhMuc');
         var chevron = document.getElementById('chevronDanhMuc');
         if (submenu && chevron) {
@@ -217,6 +244,14 @@
         if (submenuDH && chevronDH) {
             submenuDH.addEventListener('show.bs.collapse', function() { chevronDH.style.transform = 'rotate(180deg)'; });
             submenuDH.addEventListener('hide.bs.collapse', function() { chevronDH.style.transform = 'rotate(0deg)'; });
+        }
+
+        // Xoay mũi tên submenu Nhân viên
+        var submenuNV = document.getElementById('submenuNhanVien');
+        var chevronNV = document.getElementById('chevronNhanVien');
+        if (submenuNV && chevronNV) {
+            submenuNV.addEventListener('show.bs.collapse', function() { chevronNV.style.transform = 'rotate(180deg)'; });
+            submenuNV.addEventListener('hide.bs.collapse', function() { chevronNV.style.transform = 'rotate(0deg)'; });
         }
     });
 </script>

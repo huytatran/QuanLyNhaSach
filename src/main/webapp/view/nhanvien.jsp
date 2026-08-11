@@ -22,10 +22,13 @@
                 <h4 class="fw-bold mb-0" style="color:#0f172a;">Quản lý Nhân viên</h4>
                 <p class="text-muted mb-0" style="font-size:13px;">Chỉ Admin mới truy cập được trang này.</p>
             </div>
-            <a href="${pageContext.request.contextPath}/nhanvien?action=new" class="btn text-white fw-semibold"
-               style="background-color:#4f46e5;border-radius:8px;font-size:13.5px;padding:10px 18px;">
-                <i class="bi bi-plus-lg me-1"></i> Thêm nhân viên
-            </a>
+
+            <div class="d-flex gap-2">
+                <a href="${pageContext.request.contextPath}/nhanvien?action=new" class="btn text-white fw-semibold shadow-sm"
+                   style="background-color:#4f46e5;border-radius:8px;font-size:13.5px;padding:10px 18px;">
+                    <i class="bi bi-plus-lg me-1"></i> Thêm nhân viên
+                </a>
+            </div>
         </div>
 
         <c:if test="${param.thanhCong == '1'}">
@@ -60,7 +63,7 @@
                         <th>Tài khoản</th>
                         <th>SĐT</th>
                         <th>Email</th>
-                        <th>Ca làm</th> <!-- Cột Ca làm việc mới thêm -->
+                        <!-- Đã xóa cột Ca Làm -->
                         <th>Vai trò</th>
                         <th class="text-center">Trạng thái</th>
                         <th class="text-end pe-3">Thao tác</th>
@@ -75,17 +78,7 @@
                             <td>${nv.sdt}</td>
                             <td>${nv.email}</td>
 
-                            <!-- Hiển thị dữ liệu Ca làm việc -->
-                            <td>
-                                <c:choose>
-                                    <c:when test="${not empty nv.caLamViec}">
-                                        <span class="badge" style="background:#e0f2fe;color:#0369a1;border-radius:6px;">${nv.caLamViec}</span>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <span class="text-muted" style="font-style:italic;font-size:12px;">Chưa phân ca</span>
-                                    </c:otherwise>
-                                </c:choose>
-                            </td>
+                            <!-- Đã xóa dữ liệu cột Ca làm -->
 
                             <td>
                                 <c:choose>
@@ -125,7 +118,7 @@
                         </tr>
                     </c:forEach>
                     <c:if test="${empty danhSachNV}">
-                        <tr><td colspan="9" class="text-center text-muted py-5">Không có nhân viên.</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted py-5">Không có nhân viên.</td></tr> <!-- Đã giảm colspan từ 9 xuống 8 -->
                     </c:if>
                     </tbody>
                 </table>
@@ -138,6 +131,7 @@
     <input type="hidden" name="action" value="delete">
     <input type="hidden" name="ma" id="maXoa">
 </form>
+
 <script>
     function xoaNV(ma, ten) {
         if (confirm('Chuyển nhân viên "' + ten + '" sang Nghỉ làm?\nKhông xóa dữ liệu, chỉ cập nhật trạng thái.')) {
@@ -152,5 +146,7 @@
         });
     });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
