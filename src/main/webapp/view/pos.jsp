@@ -435,25 +435,52 @@
 
     /* ===== AJAX Actions ===== */
 
+    /* ===== Cập nhật tồn kho hiển thị trong bảng sách ===== */
+    function capNhatTonKho(cart) {
+        // Tính tổng số lượng đang trong giỏ theo maSach
+        const gioMap = {};
+        cart.forEach(function(item) {
+            gioMap[item.maSach] = (gioMap[item.maSach] || 0) + item.soLuong;
+        });
+        // Cập nhật cột Tồn trong bảng sách
+        document.querySelectorAll('#sachTableBody tr').forEach(function(row) {
+            const maCell = row.cells[1]; // cột Mã sách
+            if (!maCell) return;
+            const maSach = maCell.textContent.trim();
+            const tonCell = row.cells[4]; // cột Tồn
+            if (!tonCell) return;
+            const tonGoc = parseInt(tonCell.getAttribute('data-ton-goc') || tonCell.textContent.trim()) || 0;
+            if (!tonCell.hasAttribute('data-ton-goc')) {
+                tonCell.setAttribute('data-ton-goc', tonGoc);
+            }
+            const trongGio = gioMap[maSach] || 0;
+            const conLai = Math.max(0, tonGoc - trongGio);
+            tonCell.textContent = conLai;
+            // Disable nút thêm nếu hết hàng
+            const btn = row.querySelector('button.btn');
+            if (btn) btn.disabled = conLai === 0;
+        });
+    }
+
     function addToCart(maSach, maBienThe) {
         const p = new URLSearchParams();
         p.append('action', 'add');
         p.append('ma', maSach);
         if (maBienThe) p.append('maBienThe', maBienThe);
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho(data.cart); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function removeFromCart(key) {
         const p = new URLSearchParams();
         p.append('action', 'remove');
         p.append('key', key);
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho(data.cart); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function updateQty(key, qty) {
@@ -461,20 +488,20 @@
         p.append('action', 'update');
         p.append('key', key);
         p.append('soLuong', qty);
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho(data.cart); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function clearCart() {
         if (!confirm('Xóa toàn bộ giỏ hàng?')) return;
         const p = new URLSearchParams();
         p.append('action', 'clear');
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
+        posPost(p).then(function(data) {
+            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); capNhatTonKho([]); }
             else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
     function applyVoucher() {
