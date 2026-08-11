@@ -1,0 +1,32 @@
+services:
+  sqlserver_db:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: sqlserver_db
+    user: "0:0"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=QuanLyNhaSach2026!
+    ports:
+      - "14333:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+      - ./init.sql:/var/opt/mssql/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"QuanLyNhaSach2026!\" -C -Q \"SELECT 1\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  web_app:
+    build: .
+    image: huyta999/quan-ly-nha-sach:v1
+    container_name: java_web_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      sqlserver_db:
+        condition: service_healthy
+
+volumes:
+  mssql_data:
