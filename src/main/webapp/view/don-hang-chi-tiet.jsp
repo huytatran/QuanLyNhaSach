@@ -36,15 +36,6 @@
                     <i class="bi bi-printer me-1"></i> In hóa đơn
                 </button>
                 <%-- Moi: gui hoa don qua email cho khach hang cua don nay --%>
-                <form method="post" action="${pageContext.request.contextPath}/don-hang" class="d-inline"
-                      onsubmit="return confirm('Gửi hóa đơn của đơn hàng này qua email cho khách hàng?');">
-                    <input type="hidden" name="action" value="gui-email">
-                    <input type="hidden" name="maDH" value="${donHang.maDH}">
-                    <button type="submit" class="btn btn-outline-primary"
-                            ${empty donHang.khachHang.email ? 'disabled title="Khách hàng chưa có email"' : ''}>
-                        <i class="bi bi-envelope me-1"></i> Gửi hóa đơn qua email
-                    </button>
-                </form>
             </div>
         </div>
 
