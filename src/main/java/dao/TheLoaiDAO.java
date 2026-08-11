@@ -49,20 +49,28 @@ public class TheLoaiDAO {
 
     /** @return false neu ten the loai da ton tai (khong phan biet hoa/thuong) */
     public boolean insert(String tenTL) {
+        return insertAndGetId(tenTL) != null;
+    }
+
+    /**
+     * Them moi the loai va tra ve ID vua tao.
+     * @return ID moi neu thanh cong, null neu ten da ton tai
+     */
+    public Integer insertAndGetId(String tenTL) {
         Transaction tx = null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
             Long trung = session.createQuery(
                     "SELECT COUNT(t) FROM TheLoai t WHERE LOWER(t.tenTL) = :ten", Long.class)
                     .setParameter("ten", tenTL.trim().toLowerCase())
                     .uniqueResult();
-            if (trung != null && trung > 0) return false;
+            if (trung != null && trung > 0) return null;
 
             tx = session.beginTransaction();
             TheLoai t = new TheLoai();
             t.setTenTL(tenTL.trim());
             session.persist(t);
             tx.commit();
-            return true;
+            return t.getMaTL();
         } catch (RuntimeException e) {
             if (tx != null) tx.rollback();
             throw e;

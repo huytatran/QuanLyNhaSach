@@ -272,8 +272,6 @@ public class SachDAO {
             old.setBoSach(sach.getBoSach());
             old.setSoPhan(sach.getSoPhan());
             old.setAnhBia(sach.getAnhBia()); // null = xóa ảnh, có giá trị = cập nhật ảnh
-            old.setBiaSach(sach.getBiaSach());
-            old.setNgonNgu(sach.getNgonNgu());
             if (sach.getTrangThai() != null) old.setTrangThai(sach.getTrangThai());
 
             session.merge(old);

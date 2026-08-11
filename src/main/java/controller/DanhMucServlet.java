@@ -52,6 +52,10 @@ public class DanhMucServlet extends HttpServlet {
             xuLyXoa(request, response);
             return;
         }
+        if ("quickAdd".equals(action)) {
+            xuLyQuickAdd(request, response);
+            return;
+        }
         xuLyLuu(request, response);
     }
 
@@ -257,6 +261,64 @@ public class DanhMucServlet extends HttpServlet {
                         java.net.URLEncoder.encode(loi, "UTF-8")
         );
     }
+
+    // ================================================================
+    /**
+     * API AJAX tao nhanh 1 muc danh muc, tra ve JSON:
+     *   {"ok":true,"id":5,"ten":"Van hoc"}
+     *   {"ok":false,"loi":"Ten da ton tai"}
+     *
+     * POST /danhmuc?action=quickAdd&loai=theloai  body: ten=...
+     * POST /danhmuc?action=quickAdd&loai=nxb      body: ten=...
+     * POST /danhmuc?action=quickAdd&loai=tacgia   body: ten=...
+     */
+    private void xuLyQuickAdd(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+
+        response.setContentType("application/json;charset=UTF-8");
+
+        String loai = request.getParameter("loai");
+        String ten  = request.getParameter("ten");
+
+        if (ten == null || ten.trim().isEmpty()) {
+            response.getWriter().write("{\"ok\":false,\"loi\":\"Vui l\\u00f2ng nh\\u1eadp t\\u00ean.\"}");
+            return;
+        }
+        ten = ten.trim();
+
+        try {
+            Integer newId = null;
+            String tenDaLuu = ten;
+
+            switch (loai == null ? "" : loai) {
+                case "theloai":
+                    newId = theLoaiDAO.insertAndGetId(ten);
+                    break;
+                case "nxb":
+                    newId = nxbDAO.insertAndGetId(ten, null, null);
+                    break;
+                case "tacgia":
+                    newId = tacGiaDAO.insertAndGetId(ten, null);
+                    break;
+                default:
+                    response.getWriter().write("{\"ok\":false,\"loi\":\"Lo\\u1ea1i kh\\u00f4ng h\\u1ee3p l\\u1ec7.\"}");
+                    return;
+            }
+
+            if (newId == null) {
+                // ten da ton tai — tra ve id cua ban ghi cu de frontend van chon duoc
+                response.getWriter().write("{\"ok\":false,\"loi\":\"T\\u00ean \\u0111\\u00e3 t\\u1ed3n t\\u1ea1i.\"}");
+            } else {
+                String json = String.format("{\"ok\":true,\"id\":%d,\"ten\":\"%s\"}",
+                        newId, tenDaLuu.replace("\"", "\\\""));
+                response.getWriter().write(json);
+            }
+
+        } catch (Exception e) {
+            response.getWriter().write("{\"ok\":false,\"loi\":\"L\\u1ed7i h\\u1ec7 th\\u1ed1ng.\"}");
+        }
+    }
+
     private Integer parseInt(String s) {
         try { return (s == null || s.isBlank()) ? null : Integer.valueOf(s.trim()); }
         catch (Exception e) { return null; }

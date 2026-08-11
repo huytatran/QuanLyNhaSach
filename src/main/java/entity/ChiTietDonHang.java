@@ -31,4 +31,10 @@ public class ChiTietDonHang {
 
     @Column(name = "ThanhTien", insertable = false, updatable = false)
     private BigDecimal thanhTien;
+
+    /** Biến thể đã bán — NULL nếu bán theo giá gốc không chọn biến thể */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "MaBienThe")
+    @ToString.Exclude
+    private SachBienThe sachBienThe;
 }

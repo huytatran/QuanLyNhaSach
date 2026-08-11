@@ -15,6 +15,7 @@ GO
 -- 2. XÓA BẢNG CŨ (theo thứ tự phụ thuộc FK)
 -- ============================================================
 IF OBJECT_ID('DanhGia',          'U') IS NOT NULL DROP TABLE DanhGia;
+IF OBJECT_ID('SachBienThe',      'U') IS NOT NULL DROP TABLE SachBienThe;
 IF OBJECT_ID('SachVatLy',        'U') IS NOT NULL DROP TABLE SachVatLy;
 IF OBJECT_ID('ChiTietDonHang',   'U') IS NOT NULL DROP TABLE ChiTietDonHang;
 IF OBJECT_ID('DonHang',          'U') IS NOT NULL DROP TABLE DonHang;
@@ -186,6 +187,20 @@ CREATE TABLE DanhGia (
     NgayDanhGia DATETIME2       NULL DEFAULT GETDATE(),
     CONSTRAINT FK_DanhGia_KhachHang FOREIGN KEY (MaKH)   REFERENCES KhachHang(MaKH),
     CONSTRAINT FK_DanhGia_Sach      FOREIGN KEY (MaSach) REFERENCES Sach(MaSach)
+);
+
+-- Biến thể sách (1 đầu sách có nhiều biến thể, mỗi biến thể có giá riêng)
+-- VD: Harry Potter bìa cứng tiếng Việt 250k, bìa mềm tiếng Việt 180k, bìa cứng tiếng Anh 320k
+CREATE TABLE SachBienThe (
+    MaBienThe       INT             IDENTITY(1,1) PRIMARY KEY,
+    MaSach          NVARCHAR(20)    NOT NULL,
+    MaBienTheCode   NVARCHAR(50)    NULL,         -- Mã ngắn do người dùng đặt, VD: S001-BC-VI
+    BiaSach         NVARCHAR(50)    NULL,         -- 'Bìa mềm' | 'Bìa cứng' | 'Bìa đặc biệt' | 'Bìa da'
+    NgonNgu         NVARCHAR(100)   NULL,         -- 'Tiếng Việt' | 'Tiếng Anh' | 'Song ngữ Anh-Việt'
+    GiaBienThe      DECIMAL(18,2)   NOT NULL DEFAULT 0,
+    TrangThai       BIT             NOT NULL DEFAULT 1,   -- 1: đang bán, 0: ngừng bán
+    CONSTRAINT FK_BienThe_Sach  FOREIGN KEY (MaSach) REFERENCES Sach(MaSach),
+    CONSTRAINT UQ_BienThe_Code  UNIQUE (MaSach, MaBienTheCode)  -- mã duy nhất trong mỗi sách
 );
 GO
 

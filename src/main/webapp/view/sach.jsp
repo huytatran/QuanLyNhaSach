@@ -117,20 +117,6 @@
                                         ${s.boSach.tenBoSach} <c:if test="${not empty s.soPhan}"> · #${s.soPhan}</c:if>
                                     </span>
                                 </c:if>
-                                <c:if test="${not empty s.biaSach or not empty s.ngonNgu}">
-                                    <div class="mt-1 d-flex flex-wrap gap-1">
-                                        <c:if test="${not empty s.biaSach}">
-                                            <span class="badge rounded-pill" style="background-color:#f0f9ff;color:#0369a1;font-size:10px;font-weight:500;">
-                                                <i class="bi bi-book me-1"></i>${s.biaSach}
-                                            </span>
-                                        </c:if>
-                                        <c:if test="${not empty s.ngonNgu}">
-                                            <span class="badge rounded-pill" style="background-color:#faf5ff;color:#7e22ce;font-size:10px;font-weight:500;">
-                                                <i class="bi bi-translate me-1"></i>${s.ngonNgu}
-                                            </span>
-                                        </c:if>
-                                    </div>
-                                </c:if>
                             </td>
                             <td>${s.theLoai.tenTL}</td>
                             <td>${s.nhaXuatBan.tenNXB}</td>
