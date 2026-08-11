@@ -219,29 +219,67 @@
 
 <!-- Modal Nhập sách vật lý -->
 <div class="modal fade" id="nhapSachVatLyModal" tabindex="-1" aria-labelledby="nhapSachVatLyModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="nhapSachVatLyModalLabel">Nhập sách vật lý</h5>
+                <h5 class="modal-title" id="nhapSachVatLyModalLabel">Nhập kho sách</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="${pageContext.request.contextPath}/nhap-kho" method="post">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="nhapSachVatLy">
-                    <div class="mb-3">
-                        <label for="maSachNhap" class="form-label">Mã đầu sách</label>
-                        <input type="text" class="form-control" id="maSachNhap" name="maSach" required readonly>
+            <div class="modal-body">
+                <%-- Tabs --%>
+                <ul class="nav nav-tabs mb-3" id="nhapKhoTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabNhapNhanh" type="button">
+                            <i class="bi bi-plus-circle me-1"></i>Nhập nhanh (theo số lượng)
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabNhapSerial" type="button">
+                            <i class="bi bi-upc-scan me-1"></i>Nhập theo Serial
+                        </button>
+                    </li>
+                </ul>
+
+                <%-- Tab 1: Nhập nhanh theo số lượng --%>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="tabNhapNhanh">
+                        <form action="${pageContext.request.contextPath}/nhap-kho" method="post" id="formNhapNhanh">
+                            <input type="hidden" name="action" value="nhapNhanh">
+                            <input type="hidden" name="maSach" id="maSachNhapNhanh">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Số lượng nhập thêm</label>
+                                <input type="number" name="soLuong" id="soLuongNhap" class="form-control"
+                                       min="1" max="1000" placeholder="VD: 10" required>
+                                <div class="form-text">Hệ thống sẽ tự tạo mã serial theo định dạng <code>MaSach-STT</code></div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                <button type="submit" class="btn text-white" style="background:#4f46e5;">
+                                    <i class="bi bi-plus-circle me-1"></i>Nhập kho
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="mb-3">
-                        <label for="danhSachSerial" class="form-label">Danh sách Mã Serial (mỗi mã một dòng)</label>
-                        <textarea class="form-control" id="danhSachSerial" name="danhSachSerial" rows="5" required></textarea>
+
+                    <%-- Tab 2: Nhập theo serial --%>
+                    <div class="tab-pane fade" id="tabNhapSerial">
+                        <form action="${pageContext.request.contextPath}/nhap-kho" method="post">
+                            <input type="hidden" name="action" value="nhapSachVatLy">
+                            <input type="hidden" name="maSach" id="maSachNhap">
+                            <div class="mb-3">
+                                <label for="danhSachSerial" class="form-label">Danh sách Mã Serial (mỗi mã một dòng)</label>
+                                <textarea class="form-control" id="danhSachSerial" name="danhSachSerial" rows="5" required></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                <button type="submit" class="btn text-white" style="background:#10b981;">
+                                    <i class="bi bi-save me-1"></i>Lưu nhập kho
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary" style="background-color: #10b981; border-color: #10b981;">Lưu nhập kho</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -271,16 +309,12 @@
     // JavaScript để điền mã sách vào modal khi mở
     var nhapSachVatLyModal = document.getElementById('nhapSachVatLyModal');
     nhapSachVatLyModal.addEventListener('show.bs.modal', function (event) {
-        // Nút đã kích hoạt modal
         var button = event.relatedTarget;
-        // Lấy thông tin từ thuộc tính data-bs-ma-sach
         var maSach = button.getAttribute('data-ma-sach');
-        // Cập nhật trường input mã sách trong modal
-        var modalMaSachInput = nhapSachVatLyModal.querySelector('#maSachNhap');
-        modalMaSachInput.value = maSach;
-
-        // Xóa nội dung cũ của textarea danhSachSerial mỗi khi modal mở
+        nhapSachVatLyModal.querySelector('#maSachNhap').value = maSach;
+        nhapSachVatLyModal.querySelector('#maSachNhapNhanh').value = maSach;
         nhapSachVatLyModal.querySelector('#danhSachSerial').value = '';
+        nhapSachVatLyModal.querySelector('#soLuongNhap').value = '';
     });
 </script>
 </body>

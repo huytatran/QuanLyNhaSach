@@ -43,4 +43,19 @@ public class SachVatLyDAO {
                     .getResultList();
         }
     }
+
+    /**
+     * Dem tong so cuon sach vat ly cua 1 dau sach (tat ca trang thai).
+     * Dung de tinh offset serial khi nhap them kho.
+     */
+    public long countBySach(String maSach) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            Long c = session.createQuery(
+                    "SELECT COUNT(sv) FROM SachVatLy sv WHERE sv.sach.maSach = :ma",
+                    Long.class)
+                    .setParameter("ma", maSach)
+                    .uniqueResult();
+            return c == null ? 0 : c;
+        }
+    }
 }

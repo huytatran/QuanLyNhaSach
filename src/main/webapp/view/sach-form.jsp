@@ -78,33 +78,6 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">Ảnh bìa</label>
-                            <div class="mb-2 text-center" id="previewContainer"
-                                 style="${not empty sach.anhBia ? '' : 'display:none'}">
-                                <img id="imgPreview"
-                                     src="${not empty sach.anhBia ? sach.anhBia : ''}"
-                                     alt="Ảnh bìa"
-                                     style="width:80px;height:105px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;"
-                                     onerror="this.closest('#previewContainer').style.display='none'">
-                            </div>
-                            <label class="form-label mb-1" style="font-size:11.5px;color:#64748b;">① Chọn file từ máy</label>
-                            <input type="file" name="anhBiaFile" id="anhBiaFile"
-                                   accept="image/*" class="form-control form-control-sm mb-2"
-                                   onchange="previewAnhFile(this)">
-                            <label class="form-label mb-1" style="font-size:11.5px;color:#64748b;">② Hoặc dán URL ảnh</label>
-                            <div class="d-flex gap-1">
-                                <input type="text" id="anhBiaUrlInput" class="form-control form-control-sm"
-                                       placeholder="https://..."
-                                       value="${sach.anhBia}"
-                                       oninput="previewAnhUrl(this.value)">
-                                <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        style="white-space:nowrap;font-size:11px;"
-                                        onclick="apDungUrl()">Áp dụng</button>
-                            </div>
-                            <input type="hidden" name="anhBia" id="anhBiaHidden" value="${sach.anhBia}">
-                        </div>
-
-                        <div class="col-md-4">
                             <label class="form-label">Năm xuất bản</label>
                             <input type="number" name="namXB" value="${sach.namXB}" class="form-control" placeholder="VD: 2020">
                         </div>
@@ -159,6 +132,29 @@
                                         style="flex-shrink:0;width:36px;height:36px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#4f46e5;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
+                            </div>
+                        </div>
+
+                        <%-- Số lượng nhập kho thêm: hiện cả khi thêm mới lẫn khi sửa --%>
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                <c:choose>
+                                    <c:when test="${dangSua}">Nhập thêm kho</c:when>
+                                    <c:otherwise>Số lượng nhập kho ban đầu</c:otherwise>
+                                </c:choose>
+                            </label>
+                            <input type="number" name="soLuongBanDau" id="soLuongBanDau"
+                                   min="0" value="0" class="form-control"
+                                   placeholder="VD: 10">
+                            <div class="form-text" style="font-size:11.5px;">
+                                <c:choose>
+                                    <c:when test="${dangSua}">
+                                        Nhập số lượng muốn bổ sung thêm vào kho. Serial tiếp theo sẽ tự tạo theo số hiện có.
+                                    </c:when>
+                                    <c:otherwise>
+                                        Để 0 nếu chưa muốn nhập kho ngay. Serial sẽ tự tạo dạng <code>${sach.maSach}-001</code>.
+                                    </c:otherwise>
+                                </c:choose>
                             </div>
                         </div>
 

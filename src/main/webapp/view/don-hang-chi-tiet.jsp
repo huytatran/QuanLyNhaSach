@@ -35,12 +35,13 @@
                 <button type="button" class="btn btn-primary" onclick="window.print()">
                     <i class="bi bi-printer me-1"></i> In hóa đơn
                 </button>
+                <%-- Moi: gui hoa don qua email cho khach hang cua don nay --%>
             </div>
         </div>
 
         <c:if test="${not empty param.message}">
             <div class="alert alert-info alert-dismissible fade show no-print" role="alert">
-                ${param.message}
+                    ${param.message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         </c:if>
@@ -94,7 +95,7 @@
                             </td>
                             <td class="text-center">${ct.soLuong}</td>
                             <td class="text-end"><fmt:formatNumber value="${ct.donGia}" pattern="#,##0"/> ₫</td>
-                            <%-- Thanh tien = So luong * Don gia --%>
+                                <%-- Thanh tien = So luong * Don gia --%>
                             <td class="text-end fw-bold"><fmt:formatNumber value="${ct.soLuong * ct.donGia}" pattern="#,##0"/> ₫</td>
                             <td class="text-center">
                                 <c:choose>
@@ -144,7 +145,10 @@
                                         </div>
                                         <div class="modal-body">
                                             <label class="form-label" style="font-size:13px;">Số lượng trả (tối đa ${conLai})</label>
-                                            <input type="number" name="soLuong" class="form-control" min="1" max="${conLai}" value="1" required>
+                                            <input type="number" name="soLuong" class="form-control mb-3" min="1" max="${conLai}" value="1" required>
+
+                                            <label class="form-label" style="font-size:13px;">Lý do trả <span class="text-muted">(không bắt buộc)</span></label>
+                                            <textarea name="lyDo" class="form-control" rows="2" maxlength="255" placeholder="VD: sách bị lỗi, khách đổi ý..."></textarea>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
@@ -179,12 +183,15 @@
                                                 <c:forEach var="s" items="${danhSachSachDangBan}">
                                                     <c:if test="${s.giaBan >= ct.donGia && s.maSach != ct.sach.maSach}">
                                                         <option value="${s.maSach}">
-                                                            ${s.tenSach} — <fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫
+                                                                ${s.tenSach} — <fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫
                                                         </option>
                                                     </c:if>
                                                 </c:forEach>
                                             </select>
-                                            <div class="form-text">Nếu sách mới có giá cao hơn, khách cần trả thêm phần chênh lệch.</div>
+                                            <div class="form-text mb-3">Nếu sách mới có giá cao hơn, khách cần trả thêm phần chênh lệch.</div>
+
+                                            <label class="form-label" style="font-size:13px;">Lý do đổi <span class="text-muted">(không bắt buộc)</span></label>
+                                            <textarea name="lyDo" class="form-control" rows="2" maxlength="255" placeholder="VD: sai kích cỡ, khách muốn tập khác..."></textarea>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
@@ -208,6 +215,56 @@
                 </table>
             </div>
         </div>
+
+        <%-- Moi: lich su doi/tra cua don hang nay (tung lan doi/tra rieng le, kem ly do) --%>
+        <c:if test="${not empty lichSuDoiTra}">
+            <div class="card bg-white border mt-4 no-print" style="border-radius:12px;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3" style="color:#0f172a;">
+                        <i class="bi bi-clock-history me-2" style="color:#4f46e5;"></i>Lịch sử đổi/trả
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Loại</th>
+                                <th>Sách cũ</th>
+                                <th class="text-center">SL</th>
+                                <th>Sách mới</th>
+                                <th class="text-end">Chênh lệch</th>
+                                <th>Lý do</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <c:forEach var="ls" items="${lichSuDoiTra}">
+                                <tr>
+                                    <td style="font-size:12.5px;">${ls.ngayThucHien}</td>
+                                    <td>
+                                        <c:choose>
+                                            <c:when test="${ls.loaiGiaoDich == 'DOI'}">
+                                                <span class="badge bg-primary-subtle text-primary">Đổi</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="badge bg-warning-subtle text-warning-emphasis">Trả</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td>${ls.chiTietCu.sach.tenSach}</td>
+                                    <td class="text-center">${ls.soLuongTra}</td>
+                                    <td>${not empty ls.sachMoi ? ls.sachMoi.tenSach : '-'}</td>
+                                    <td class="text-end">
+                                        <fmt:formatNumber value="${ls.chenhLechTien}" pattern="#,##0"/> ₫
+                                    </td>
+                                    <td style="font-size:12.5px;">${not empty ls.lyDo ? ls.lyDo : '-'}</td>
+                                </tr>
+                            </c:forEach>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </c:if>
     </div>
 </div>
 
@@ -234,7 +291,7 @@
             var noiDung = loai === 'TRA'
                 ? ('Trả <b>' + soLuong + '</b> cuốn: <b>' + tenSach + '</b>')
                 : ('Đổi <b>' + soLuong + '</b> cuốn: <b>' + tenSach + '</b>' +
-                   '<br>(khách trả thêm phần chênh lệch nếu sách mới giá cao hơn)');
+                    '<br>(khách trả thêm phần chênh lệch nếu sách mới giá cao hơn)');
 
             var w = window.open('', '_blank', 'width=420,height=560');
             w.document.write(
