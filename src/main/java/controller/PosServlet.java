@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
-
     private final SachDAO sachDAO           = new SachDAO();
     private final SachBienTheDAO bienTheDAO = new SachBienTheDAO();
     private final KhachHangDAO khachHangDAO = new KhachHangDAO();
@@ -103,6 +102,7 @@ public class PosServlet extends HttpServlet {
             long cur = tonKhoHienThi.getOrDefault(ms, 0L);
             tonKhoHienThi.put(ms, Math.max(0L, cur - item.getSoLuong()));
         }
+
         danhSach.sort((a, b) -> {
             long tA = tonKhoHienThi.getOrDefault(a.getMaSach(), 0L);
             long tB = tonKhoHienThi.getOrDefault(b.getMaSach(), 0L);
@@ -114,46 +114,44 @@ public class PosServlet extends HttpServlet {
         for (Sach s : danhSach) {
             bienTheMap.put(s.getMaSach(), bienTheDAO.getByMaSachDangBan(s.getMaSach()));
         }
-        request.setAttribute("bienTheMap", bienTheMap);
-        request.setAttribute("danhSachSach", danhSach);
-        request.setAttribute("tonKhoMap", tonKhoHienThi);
-        request.setAttribute("dsKhachHang", khachHangDAO.getAll());
 
-        List<Voucher> dsVoucher = voucherRepo.getVouchersHopLe();
+        // 1. Kiểm tra loại khách hàng (Mới/Cũ)
         Integer maKHSelected = (Integer) session.getAttribute("maKHSelected");
         boolean isNewCustomer = false;
         if (maKHSelected != null) {
             isNewCustomer = !khachHangDAO.hasOrder(maKHSelected);
-            dsVoucher = filterVouchersForCustomerType(dsVoucher, isNewCustomer);
         }
+
+        // 2. Tự động chọn/kiểm tra voucher tốt nhất (Best Voucher)
+        capNhatAutoVoucher(session, gioHang, isNewCustomer);
+
+        // 3. Lọc danh sách Voucher theo loại khách hàng
+        List<Voucher> dsVoucher = filterVouchersForCustomerType(voucherRepo.getVouchersHopLe(), isNewCustomer);
+
+        request.setAttribute("bienTheMap", bienTheMap);
+        request.setAttribute("danhSachSach", danhSach);
+        request.setAttribute("tonKhoMap", tonKhoHienThi);
+        request.setAttribute("dsKhachHang", khachHangDAO.getAll());
         request.setAttribute("dsVoucher", dsVoucher);
         request.setAttribute("isNewCustomer", isNewCustomer);
         request.setAttribute("maKHSelected", maKHSelected);
         request.setAttribute("chiTietGio", new ArrayList<>(gioHang.values()));
 
+        // 4. Tính toán tiền giảm cho 1 Voucher duy nhất
         BigDecimal tongTienGio = tinhTong(gioHang);
+        String appliedVoucher  = (String) session.getAttribute("appliedVoucher");
         BigDecimal soTienGiam  = BigDecimal.ZERO;
-        List<String> appliedVouchers = layAppliedVouchers(session);
-        for (String maCode : appliedVouchers) {
-            if (maCode != null && !maCode.isBlank())
-                soTienGiam = soTienGiam.add(voucherRepo.tinhTienGiamGia(maCode, tongTienGio));
+        if (appliedVoucher != null && !appliedVoucher.isBlank()) {
+            soTienGiam = voucherRepo.tinhTienGiamGia(appliedVoucher, tongTienGio);
         }
         BigDecimal tongTienPhaiTra = tongTienGio.subtract(soTienGiam).max(BigDecimal.ZERO);
-        BigDecimal capPercent = isNewCustomer ? new BigDecimal("0.4") : new BigDecimal("0.2");
-        BigDecimal capAmount  = tongTienGio.multiply(capPercent);
-        BigDecimal curDiscPct = tongTienGio.compareTo(BigDecimal.ZERO) > 0
-                ? soTienGiam.divide(tongTienGio, 2, java.math.RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
 
-        request.setAttribute("tongTienGio",            tongTienGio);
-        request.setAttribute("soTienGiam",             soTienGiam);
-        request.setAttribute("tongTienPhaiTra",        tongTienPhaiTra);
-        request.setAttribute("appliedVouchers",        appliedVouchers);
-        request.setAttribute("capPercent",             capPercent.multiply(new BigDecimal("100")).intValue());
-        request.setAttribute("capAmount",              capAmount);
-        request.setAttribute("currentDiscountPercent", curDiscPct.multiply(new BigDecimal("100")).intValue());
-        request.setAttribute("tuKhoa",                 q);
-        request.setAttribute("activeMenu",             "pos");
+        request.setAttribute("tongTienGio",     tongTienGio);
+        request.setAttribute("soTienGiam",      soTienGiam);
+        request.setAttribute("tongTienPhaiTra", tongTienPhaiTra);
+        request.setAttribute("appliedVoucher",  appliedVoucher != null ? appliedVoucher : "");
+        request.setAttribute("tuKhoa",          q);
+        request.setAttribute("activeMenu",      "pos");
         request.getRequestDispatcher("/view/pos.jsp").forward(request, response);
     }
 
@@ -167,11 +165,22 @@ public class PosServlet extends HttpServlet {
         HttpSession session = request.getSession();
         Map<String, CartItem> gioHang = layGioHang(session);
 
-        // Giữ lại khách hàng đã chọn
+        // Cập nhật khách hàng được chọn & Reset cờ thủ công nếu chọn khách mới
         String maKHParam = request.getParameter("maKH");
-        if (maKHParam != null && !maKHParam.isBlank()) {
-            try { session.setAttribute("maKHSelected", Integer.valueOf(maKHParam)); }
-            catch (NumberFormatException ignored) {}
+        if (maKHParam != null) {
+            Integer oldKH = (Integer) session.getAttribute("maKHSelected");
+            Integer newKH = parseIntOrNull(maKHParam);
+            if ((oldKH == null && newKH != null) || (oldKH != null && !oldKH.equals(newKH))) {
+                session.setAttribute("maKHSelected", newKH);
+                session.removeAttribute("manualVoucher"); // Reset để tự động chọn lại voucher phù hợp cho KH mới
+            }
+        }
+
+        // ---- Nếu client chỉ muốn refresh summary/cart (ví dụ khi thay đổi khách) ----
+        if ("refreshSummary".equals(action) || "refresh".equals(action)) {
+            // Trả về JSON hiện trạng giỏ hàng + summary (gồm isNewCustomer)
+            sendJsonCartResponse(response, session, gioHang);
+            return;
         }
 
         // ---- Thêm khách hàng nhanh ----
@@ -183,6 +192,8 @@ public class PosServlet extends HttpServlet {
                 kh.setTenKH(ten.trim());
                 kh.setSdt(sdt != null ? sdt.trim() : "");
                 KhachHang saved = khachHangDAO.insert(kh);
+                session.setAttribute("maKHSelected", saved.getMaKH());
+                session.removeAttribute("manualVoucher");
                 sendJson(response, String.format("{\"ok\":true,\"maKH\":%d,\"tenKH\":%s,\"sdt\":%s}",
                         saved.getMaKH(), jsonStr(saved.getTenKH()), jsonStr(saved.getSdt())));
             } else {
@@ -256,50 +267,37 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        // ---- Xóa toàn bộ ----
+        // ---- Xóa toàn bộ giỏ ----
         if ("clear".equals(action)) {
             gioHang.clear();
-            session.removeAttribute("appliedVouchers");
+            session.removeAttribute("appliedVoucher");
+            session.removeAttribute("manualVoucher");
             sendJsonCartResponse(response, session, gioHang);
             return;
         }
 
-        // ---- Áp voucher đơn ----
+        // ---- Áp dụng Voucher (Thủ công) ----
         if ("applyVoucherSingle".equals(action)) {
             String maCode = request.getParameter("maCode");
             if (maCode == null || maCode.isBlank()) { sendJsonError(response, "Vui lòng chọn voucher"); return; }
-            List<String> applied = layAppliedVouchers(session);
-            if (applied.size() >= 2) { sendJsonError(response, "Tối đa chỉ được áp 2 vouchers cùng lúc"); return; }
-            if (applied.contains(maCode.trim())) { sendJsonError(response, "Voucher này đã được áp dụng rồi"); return; }
             BigDecimal tongTien = tinhTong(gioHang);
             if (tongTien.compareTo(BigDecimal.ZERO) <= 0) { sendJsonError(response, "Giỏ hàng rỗng, không thể áp voucher"); return; }
-            BigDecimal currentTotal = BigDecimal.ZERO;
-            for (String ma : applied) currentTotal = currentTotal.add(voucherRepo.tinhTienGiamGia(ma, tongTien));
-            BigDecimal newDiscount = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
-            if (newDiscount.compareTo(BigDecimal.ZERO) <= 0) { sendJsonError(response, "Voucher không áp dụng được (hết lượt hoặc không đạt điều kiện)"); return; }
-            Integer maKHSel = (Integer) session.getAttribute("maKHSelected");
-            boolean isNew   = (maKHSel != null) && !khachHangDAO.hasOrder(maKHSel);
-            BigDecimal cap  = tongTien.multiply(isNew ? new BigDecimal("0.4") : new BigDecimal("0.2"));
-            if (currentTotal.add(newDiscount).compareTo(cap) > 0) {
-                sendJsonError(response, "Áp voucher này sẽ vượt ngưỡng giảm giá (" + (isNew ? 40 : 20) + "%)");
+
+            BigDecimal giam = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
+            if (giam.compareTo(BigDecimal.ZERO) <= 0) {
+                sendJsonError(response, "Voucher không đủ điều kiện áp dụng");
                 return;
             }
-            applied.add(maCode.trim());
+            session.setAttribute("appliedVoucher", maCode.trim());
+            session.setAttribute("manualVoucher", true); // Đánh dấu thu ngân chủ động chọn
             sendJsonCartResponse(response, session, gioHang);
             return;
         }
 
-        // ---- Gỡ 1 voucher ----
-        if ("removeAppliedVoucher".equals(action)) {
-            String maCode = request.getParameter("maCode");
-            if (maCode != null) layAppliedVouchers(session).remove(maCode.trim());
-            sendJsonCartResponse(response, session, gioHang);
-            return;
-        }
-
-        // ---- Hủy tất cả voucher ----
+        // ---- Hủy Voucher (Thủ công) ----
         if ("cancelAllVouchers".equals(action)) {
-            session.removeAttribute("appliedVouchers");
+            session.removeAttribute("appliedVoucher");
+            session.setAttribute("manualVoucher", true); // Đánh dấu thu ngân chủ động gỡ
             sendJsonCartResponse(response, session, gioHang);
             return;
         }
@@ -315,16 +313,15 @@ public class PosServlet extends HttpServlet {
             try {
                 BigDecimal tongTien   = tinhTong(gioHang);
                 BigDecimal soTienGiam = BigDecimal.ZERO;
-                List<String> applied  = layAppliedVouchers(session);
-                for (String maCode : applied) {
-                    if (maCode != null && !maCode.isBlank()) {
-                        BigDecimal d = voucherRepo.tinhTienGiamGia(maCode.trim(), tongTien);
-                        if (d.compareTo(BigDecimal.ZERO) > 0) {
-                            soTienGiam = soTienGiam.add(d);
-                            voucherRepo.tangLuotSuDung(maCode.trim());
-                        }
+                String appliedCode    = (String) session.getAttribute("appliedVoucher");
+
+                if (appliedCode != null && !appliedCode.isBlank()) {
+                    soTienGiam = voucherRepo.tinhTienGiamGia(appliedCode, tongTien);
+                    if (soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
+                        voucherRepo.tangLuotSuDung(appliedCode);
                     }
                 }
+
                 int maDH = donHangDAO.taoDonHangBienThe(
                         Integer.valueOf(maKHStr),
                         nv.getMaNV(),
@@ -332,9 +329,10 @@ public class PosServlet extends HttpServlet {
                         new ArrayList<>(gioHang.values()),
                         soTienGiam);
                 gioHang.clear();
-                session.removeAttribute("appliedVouchers");
+                session.removeAttribute("appliedVoucher");
+                session.removeAttribute("manualVoucher");
                 session.removeAttribute("maKHSelected");
-                sendJson(response, "{\"ok\":true,\"maDH\":" + maDH + ",\"message\":\"Tạo đơn hàng #" + maDH + " thành công.\",\"cart\":[],\"summary\":{\"tongTienGio\":0,\"soTienGiam\":0,\"tongTienPhaiTra\":0,\"appliedVouchers\":[]}}");
+                sendJson(response, "{\"ok\":true,\"maDH\":" + maDH + ",\"message\":\"Tạo đơn hàng #" + maDH + " thành công.\",\"cart\":[],\"summary\":{\"tongTienGio\":0,\"soTienGiam\":0,\"tongTienPhaiTra\":0,\"appliedVoucher\":\"\"}}");
             } catch (Exception e) {
                 sendJsonError(response, e.getMessage() == null ? "Không tạo được đơn" : e.getMessage());
             }
@@ -344,17 +342,49 @@ public class PosServlet extends HttpServlet {
         sendJson(response, "{\"ok\":false,\"message\":\"Hành động không hợp lệ\"}");
     }
 
-    // ---- Build & send JSON cart+summary ----
+    // ----------------------------------------------------------------
+    // HAM HO TRO RENDER DỮ LIỆU VA CHECK AUTOMATIC VOUCHER
+    // ----------------------------------------------------------------
+
+    // Tự động chọn voucher tốt nhất nếu chưa bị chọn thủ công
+    private void capNhatAutoVoucher(HttpSession session, Map<String, CartItem> gioHang, boolean isNewCustomer) {
+        Boolean manual = (Boolean) session.getAttribute("manualVoucher");
+        if (manual != null && manual) {
+            // Nếu user đã can thiệp thủ công: Kiểm tra xem voucher hiện tại có còn hợp lệ với giá trị giỏ hàng mới không
+            String curCode = (String) session.getAttribute("appliedVoucher");
+            if (curCode != null && !curCode.isBlank()) {
+                BigDecimal giam = voucherRepo.tinhTienGiamGia(curCode, tinhTong(gioHang));
+                if (giam.compareTo(BigDecimal.ZERO) <= 0) {
+                    session.removeAttribute("appliedVoucher"); // Hết điều kiện thì gỡ
+                }
+            }
+            return;
+        }
+
+        // Tự động tìm Best Voucher
+        BigDecimal tong = tinhTong(gioHang);
+        Voucher best = voucherRepo.findBestVoucher(tong, isNewCustomer);
+        if (best != null) {
+            session.setAttribute("appliedVoucher", best.getMaCode());
+        } else {
+            session.removeAttribute("appliedVoucher");
+        }
+    }
+
+    // Build & send JSON cart + summary
     private void sendJsonCartResponse(HttpServletResponse response, HttpSession session,
-                                       Map<String, CartItem> gioHang) throws IOException {
+                                      Map<String, CartItem> gioHang) throws IOException {
         Integer maKHSel = (Integer) session.getAttribute("maKHSelected");
         boolean isNew   = (maKHSel != null) && !khachHangDAO.hasOrder(maKHSel);
+
+        // Tự động kiểm tra/chọn Best Voucher trước khi trả JSON
+        capNhatAutoVoucher(session, gioHang, isNew);
+
         BigDecimal tongTienGio = tinhTong(gioHang);
+        String appliedCode     = (String) session.getAttribute("appliedVoucher");
         BigDecimal soTienGiam  = BigDecimal.ZERO;
-        List<String> applied   = layAppliedVouchers(session);
-        for (String ma : applied) {
-            if (ma != null && !ma.isBlank())
-                soTienGiam = soTienGiam.add(voucherRepo.tinhTienGiamGia(ma, tongTienGio));
+        if (appliedCode != null && !appliedCode.isBlank()) {
+            soTienGiam = voucherRepo.tinhTienGiamGia(appliedCode, tongTienGio);
         }
         BigDecimal tongPhaiTra = tongTienGio.subtract(soTienGiam).max(BigDecimal.ZERO);
 
@@ -380,12 +410,8 @@ public class PosServlet extends HttpServlet {
         sb.append("\"soTienGiam\":").append(soTienGiam.toPlainString()).append(",");
         sb.append("\"tongTienPhaiTra\":").append(tongPhaiTra.toPlainString()).append(",");
         sb.append("\"isNewCustomer\":").append(isNew).append(",");
-        sb.append("\"appliedVouchers\":[");
-        for (int i = 0; i < applied.size(); i++) {
-            if (i > 0) sb.append(",");
-            sb.append(jsonStr(applied.get(i)));
-        }
-        sb.append("]}}");
+        sb.append("\"appliedVoucher\":").append(jsonStr(appliedCode != null ? appliedCode : "")).append("");
+        sb.append("}}");
         sendJson(response, sb.toString());
     }
 
@@ -409,10 +435,10 @@ public class PosServlet extends HttpServlet {
     private String jsonStr(String s) {
         if (s == null) return "null";
         return "\"" + s.replace("\\", "\\\\")
-                       .replace("\"", "\\\"")
-                       .replace("\n", "\\n")
-                       .replace("\r", "\\r")
-                       .replace("\t", "\\t") + "\"";
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t") + "\"";
     }
 
     private Map<String, CartItem> layGioHang(HttpSession session) {
@@ -420,13 +446,6 @@ public class PosServlet extends HttpServlet {
         Map<String, CartItem> gh = (Map<String, CartItem>) session.getAttribute("gioHangV2");
         if (gh == null) { gh = new LinkedHashMap<>(); session.setAttribute("gioHangV2", gh); }
         return gh;
-    }
-
-    private List<String> layAppliedVouchers(HttpSession session) {
-        @SuppressWarnings("unchecked")
-        List<String> list = (List<String>) session.getAttribute("appliedVouchers");
-        if (list == null) { list = new ArrayList<>(); session.setAttribute("appliedVouchers", list); }
-        return list;
     }
 
     private BigDecimal tinhTong(Map<String, CartItem> gioHang) {

@@ -328,8 +328,14 @@ public class DonHangDAO {
                 }
             }
 
-            dh.setTongTien(tong);
+            /*dh.setTongTien(tong);
+            session.merge(dh);*/
+            // Cap nhat tong tien thuc thu (Tong - Giam gia, khong am)
+            BigDecimal tongThucThu = tong.subtract(soTienGiam == null ? BigDecimal.ZERO : soTienGiam).max(BigDecimal.ZERO);
+            dh.setTongTien(tongThucThu);
             session.merge(dh);
+
+
             tx.commit();
             return dh.getMaDH();
         } catch (RuntimeException e) {
