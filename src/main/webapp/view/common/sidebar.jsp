@@ -89,7 +89,6 @@
             <span class="text-uppercase px-3" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Danh mục sách</span>
         </li>
 
-        <%-- Thuộc tính sách — có thể thu gọn/mở rộng --%>
         <li class="nav-item mb-1">
             <a href="#submenuDanhMuc" data-bs-toggle="collapse"
                class="nav-link d-flex align-items-center justify-content-between ${activeMenu == 'danhmuc' ? 'text-white' : 'text-white-50 hover-menu'}"
@@ -130,20 +129,11 @@
             </a>
         </li>
 
-        <li class="nav-item mb-1">
-            <a href="${pageContext.request.contextPath}/danhgia"
-               class="nav-link d-flex align-items-center ${activeMenu == 'danhgia' ? 'text-white' : 'text-white-50 hover-menu'}"
-               style="${activeMenu == 'danhgia' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
-                <i class="bi bi-chat-square-text-fill me-2"></i> Phản hồi khách hàng
-            </a>
-        </li>
-
         <c:if test="${sessionScope.currentUser.vaiTroNV == 1}">
             <li class="nav-item mt-4 mb-2">
                 <span class="text-uppercase px-3" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Hệ thống</span>
             </li>
 
-            <%-- MENU QUẢN LÝ NHÂN VIÊN (DẠNG COLLAPSE) --%>
             <li class="nav-item mb-1">
                 <a href="#submenuNhanVien" data-bs-toggle="collapse"
                    class="nav-link d-flex align-items-center justify-content-between
@@ -175,7 +165,6 @@
                     </ul>
                 </div>
             </li>
-            <%-- KẾT THÚC MENU NHÂN VIÊN --%>
 
             <li class="nav-item mb-1">
                 <a href="${pageContext.request.contextPath}/baocao"

@@ -9,9 +9,6 @@
         .checklist-item { padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s; background: #fff; }
         .checklist-item:hover { border-color: #cbd5e1; background: #f8fafc; cursor: pointer; }
         .form-check-input:checked { background-color: #10b981; border-color: #10b981; }
-        .stat-box { background: #f1f5f9; border-radius: 8px; padding: 15px; text-align: center; }
-        .stat-value { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
-        .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
@@ -25,41 +22,18 @@
                 <h4 class="fw-bold mb-0" style="color:#0f172a;"><i class="bi bi-arrow-left-right text-primary me-2"></i> Bàn giao ca làm việc</h4>
                 <p class="text-muted mb-0 mt-1" style="font-size: 13.5px;">Hoàn tất các thủ tục dưới đây trước khi kết thúc ca trực.</p>
             </div>
+
+            <!-- THẺ HIỂN THỊ CA HIỆN TẠI ĐÃ ĐƯỢC GẮN ID ĐỂ JS XỬ LÝ -->
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2" style="font-size: 13px;">
-                <i class="bi bi-clock-history me-1"></i> Ca hiện tại: 07:00 - 13:00
+                <i class="bi bi-clock-history me-1"></i> <span id="textCaHienTai">Đang tải giờ...</span>
             </span>
         </div>
 
         <div class="row g-4">
-            <!-- CỘT TRÁI: CHECKLIST & THỐNG KÊ -->
+            <!-- CỘT TRÁI: CHECKLIST -->
             <div class="col-md-7">
-                <!-- Thống kê nhanh -->
-                <div class="card bg-white border p-3 shadow-sm mb-4" style="border-radius:12px; border-color:#e2e8f0;">
-                    <h6 class="fw-bold mb-3" style="font-size: 14px;">Tổng quan ca trực</h6>
-                    <div class="row g-2">
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <div class="stat-value text-primary">12</div>
-                                <div class="stat-label">Đơn hàng</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <div class="stat-value text-success">38</div>
-                                <div class="stat-label">Sách đã bán</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <div class="stat-value text-warning">01</div>
-                                <div class="stat-label">Đổi trả</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Checklist -->
-                <div class="card bg-white border p-4 shadow-sm" style="border-radius:12px; border-color:#e2e8f0;">
+                <div class="card bg-white border p-4 shadow-sm h-100" style="border-radius:12px; border-color:#e2e8f0;">
                     <h6 class="fw-bold mb-1" style="font-size: 14px;">Checklist cuối ca</h6>
                     <p class="text-muted mb-3" style="font-size: 12px;">Đánh dấu các công việc đã hoàn thành</p>
 
@@ -119,30 +93,46 @@
 </div>
 
 <script>
+    // Hàm tự động xác định ca làm việc theo giờ hệ thống
+    document.addEventListener('DOMContentLoaded', function() {
+        const hour = new Date().getHours();
+        let caText = "Ngoài giờ làm việc";
+
+        // Logic chia ca giống với trang Lịch làm việc
+        if (hour >= 7 && hour < 9) {
+            caText = "07:00 - 09:00 (Ca Sáng sớm)";
+        } else if (hour >= 9 && hour < 11) {
+            caText = "09:00 - 11:00 (Ca Sáng)";
+        } else if (hour >= 11 && hour < 19) {
+            caText = "11:00 - 19:00 (Ca Trưa - Tối)";
+        } else if (hour >= 19 && hour < 22) {
+            caText = "19:00 - 22:00 (Ca Tối)";
+        }
+
+        document.getElementById('textCaHienTai').innerText = "Ca hiện tại: " + caText;
+    });
+
+    // Hàm xử lý nút chốt ca
     function xuLyGiaoCa() {
         const nguoiNhan = document.getElementById('nguoiNhanCa').value;
         const checkboxes = document.querySelectorAll('.form-check-input');
 
-        // Kiểm tra xem đã chọn người nhận ca chưa
         if (!nguoiNhan) {
             alert("Vui lòng chọn Nhân viên nhận ca tiếp theo!");
             document.getElementById('nguoiNhanCa').focus();
             return;
         }
 
-        // Đếm số lượng checklist đã check
         let checkedCount = 0;
         checkboxes.forEach(cb => {
             if (cb.checked) checkedCount++;
         });
 
-        // Nhắc nhở nếu chưa check đủ checklist
         if (checkedCount < checkboxes.length) {
             const xacNhanChecklist = confirm("Bạn chưa hoàn thành toàn bộ Checklist cuối ca. Vẫn muốn tiếp tục bàn giao?");
             if (!xacNhanChecklist) return;
         }
 
-        // Báo thành công và Đăng xuất
         alert("Bàn giao ca cho " + nguoiNhan + " thành công! Hệ thống sẽ tự động đăng xuất.");
         window.location.href = "${pageContext.request.contextPath}/dashboard?action=logout";
     }

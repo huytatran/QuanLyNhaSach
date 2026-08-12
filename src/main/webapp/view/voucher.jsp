@@ -32,7 +32,7 @@
 
 <div class="content-wrapper">
     <div class="mb-4">
-        <span class="text-uppercase" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">NV4 - Tích hợp POS</span>
+
         <h3 class="fw-bold mt-1" style="color: #0f172a;"><i class="bi bi-ticket-perforated-fill me-2" style="color: #4f46e5;"></i> Voucher giảm giá</h3>
         <p class="text-muted mb-0" style="font-size: 14px;">Tạo mã giảm giá, điều kiện áp dụng và tính SoTienGiam ngay trên màn hình POS.</p>
     </div>
@@ -48,7 +48,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Kiểu giảm</label>
-                        <select class="form-select" name="loaiGiam">
+                        <select class="form-select" name="loaiGiam" id="kieuGiam">
                             <option value="1">Giảm theo phần trăm (%)</option>
                             <option value="2">Giảm tiền mặt (đ)</option>
                         </select>
@@ -60,7 +60,7 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label">Giảm tối đa</label>
-                            <input type="number" step="0.01" class="form-control" name="giaGiamToiDa" required>
+                            <input type="number" step="0.01" class="form-control" name="giaGiamToiDa" id="giamToiDa" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -157,5 +157,38 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const kieuGiam = document.getElementById('kieuGiam');
+        const giamToiDa = document.getElementById('giamToiDa');
+
+        function xuLyHienThiGiamToiDa() {
+            // Giá trị 1 là Giảm theo phần trăm, 2 là Giảm tiền mặt
+            if (kieuGiam.value === '1') {
+                // Giảm theo % -> CHỈ có Giá trị giảm (KHÓA Giảm tối đa)
+                giamToiDa.disabled = true;
+                giamToiDa.value = '';
+                giamToiDa.style.backgroundColor = '#f1f5f9';
+                giamToiDa.placeholder = 'Không áp dụng';
+                giamToiDa.removeAttribute('required'); // Xóa thuộc tính bắt buộc nhập
+            }
+            else if (kieuGiam.value === '2') {
+                // Giảm tiền mặt -> MỞ khóa Giảm tối đa
+                giamToiDa.disabled = false;
+                giamToiDa.style.backgroundColor = '#ffffff';
+                giamToiDa.placeholder = '';
+                giamToiDa.setAttribute('required', 'required'); // Đặt lại thuộc tính bắt buộc nhập
+            }
+        }
+
+        if (kieuGiam && giamToiDa) {
+            // Khởi chạy lúc mới load trang
+            xuLyHienThiGiamToiDa();
+            // Thay đổi giao diện ngay lập tức khi người dùng click đổi option
+            kieuGiam.addEventListener('change', xuLyHienThiGiamToiDa);
+        }
+    });
+</script>
 </body>
 </html>
