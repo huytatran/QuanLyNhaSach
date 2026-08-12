@@ -135,6 +135,29 @@
                             </div>
                         </div>
 
+                        <%-- Số lượng nhập kho thêm: hiện cả khi thêm mới lẫn khi sửa --%>
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                <c:choose>
+                                    <c:when test="${dangSua}">Nhập thêm kho</c:when>
+                                    <c:otherwise>Số lượng nhập kho ban đầu</c:otherwise>
+                                </c:choose>
+                            </label>
+                            <input type="number" name="soLuongBanDau" id="soLuongBanDau"
+                                   min="0" value="0" class="form-control"
+                                   placeholder="VD: 10">
+                            <div class="form-text" style="font-size:11.5px;">
+                                <c:choose>
+                                    <c:when test="${dangSua}">
+                                        Nhập số lượng muốn bổ sung thêm vào kho. Serial tiếp theo sẽ tự tạo theo số hiện có.
+                                    </c:when>
+                                    <c:otherwise>
+                                        Để 0 nếu chưa muốn nhập kho ngay. Serial sẽ tự tạo dạng <code>${sach.maSach}-001</code>.
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
+
                         <div class="col-md-8">
                             <label class="form-label">Bộ sách (nếu có)</label>
                             <select name="maBoSach" id="selectBoSach" class="form-select">

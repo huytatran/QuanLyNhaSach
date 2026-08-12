@@ -10,7 +10,7 @@
         .table td { text-align: center; vertical-align: middle; padding: 12px; border-bottom: 1px solid #f1f5f9; }
         .ca-title { font-size: 13px; font-weight: 700; color: #334155; }
         .ca-desc { font-size: 11px; color: #64748b; font-weight: normal; display: block; margin-top: 4px; }
-        .badge-nv { font-size: 11.5px; font-weight: 500; padding: 6px 10px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: 100%; text-align: center; }
+        .badge-nv { font-size: 11.5px; font-weight: 500; padding: 6px 10px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: 100%; text-align: center; transition: all 0.2s; }
         .date-sub { display: block; font-size: 11px; font-weight: 400; color: #94a3b8; margin-top: 2px; }
     </style>
 </head>
@@ -35,8 +35,13 @@
                 <button onclick="changeWeek(1)" class="btn btn-outline-secondary btn-sm fw-semibold" style="border-radius: 8px; padding: 8px 16px;">
                     Tuần sau <i class="bi bi-chevron-right"></i>
                 </button>
-                <button onclick="window.print()" class="btn btn-primary btn-sm fw-semibold ms-2 shadow-sm" style="background-color: #4f46e5; border: none; border-radius: 8px; padding: 8px 16px;">
-                    <i class="bi bi-printer me-1"></i> Xuất / In lịch
+
+                <button data-bs-toggle="modal" data-bs-target="#modalSwap" class="btn btn-success btn-sm fw-semibold ms-2 shadow-sm" style="border-radius: 8px; padding: 8px 16px;">
+                    <i class="bi bi-arrow-left-right me-1"></i> Đổi ca nhân viên
+                </button>
+
+                <button onclick="window.print()" class="btn btn-primary btn-sm fw-semibold ms-1 shadow-sm" style="background-color: #4f46e5; border: none; border-radius: 8px; padding: 8px 16px;">
+                    <i class="bi bi-printer me-1"></i> Xuất / In
                 </button>
             </div>
         </div>
@@ -44,17 +49,17 @@
         <!-- BẢNG LỊCH TRỰC -->
         <div class="card bg-white border p-0 shadow-sm overflow-hidden" style="border-radius:12px; border-color:#e2e8f0;">
             <div class="table-responsive">
-                <table class="table table-bordered mb-0">
+                <table class="table table-bordered mb-0" id="lichTable">
                     <thead>
                     <tr>
                         <th style="width: 12%; background-color: #f1f5f9;">KHUNG GIỜ</th>
-                        <th style="width: 12%;">Thứ 2 <span class="date-sub" id="date-col-0">10/08</span></th>
-                        <th style="width: 12%;">Thứ 3 <span class="date-sub" id="date-col-1">11/08</span></th>
-                        <th style="width: 12%;">Thứ 4 <span class="date-sub" id="date-col-2">12/08</span></th>
-                        <th style="width: 12%;">Thứ 5 <span class="date-sub" id="date-col-3">13/08</span></th>
-                        <th style="width: 12%;">Thứ 6 <span class="date-sub" id="date-col-4">14/08</span></th>
-                        <th style="width: 12%;">Thứ 7 <span class="date-sub" id="date-col-5">15/08</span></th>
-                        <th style="width: 12%; color: #ef4444;">Chủ nhật <span class="date-sub" id="date-col-6" style="color: #fca5a5;">16/08</span></th>
+                        <th style="width: 12%;">Thứ 2 <span class="date-sub" id="date-col-1">10/08</span></th>
+                        <th style="width: 12%;">Thứ 3 <span class="date-sub" id="date-col-2">11/08</span></th>
+                        <th style="width: 12%;">Thứ 4 <span class="date-sub" id="date-col-3">12/08</span></th>
+                        <th style="width: 12%;">Thứ 5 <span class="date-sub" id="date-col-4">13/08</span></th>
+                        <th style="width: 12%;">Thứ 6 <span class="date-sub" id="date-col-5">14/08</span></th>
+                        <th style="width: 12%;">Thứ 7 <span class="date-sub" id="date-col-6">15/08</span></th>
+                        <th style="width: 12%; color: #ef4444;">Chủ nhật <span class="date-sub" id="date-col-7" style="color: #fca5a5;">16/08</span></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -249,25 +254,106 @@
             </div>
         </div>
 
+        <!-- KHU VỰC NHẬT KÝ ĐỔI CA -->
+        <div class="card bg-white border mt-4 p-0 shadow-sm" style="border-radius:12px; border-color:#e2e8f0;">
+            <div class="card-header bg-white border-bottom py-3" style="border-radius: 12px 12px 0 0;">
+                <h6 class="fw-bold mb-0" style="color:#0f172a;"><i class="bi bi-journal-text text-primary me-2"></i>Nhật ký ghi chú & Đổi ca</h6>
+            </div>
+            <div class="card-body p-3" id="nhatKyGhiChu" style="max-height: 200px; overflow-y: auto; font-size: 13.5px;">
+                <div class="text-muted fst-italic text-center py-2" id="emptyLog">Chưa có ghi chú đổi ca nào trong tuần này.</div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<!-- SCRIPT XỬ LÝ CHUYỂN TUẦN VÀ THAY ĐỔI NGÀY THÁNG CÓ XÁO TRỘN LỊCH -->
-<script>
-    // Biến lưu số tuần đang lệch so với tuần hiện tại (0 là tuần này)
-    let currentWeekOffset = 0;
+<!-- MODAL POPUP: CHỨC NĂNG TRÁO ĐỔI CA -->
+<div class="modal fade" id="modalSwap" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" style="color: #0f172a;"><i class="bi bi-arrow-left-right text-success me-2"></i>Chức năng tráo đổi ca</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" style="font-size: 13px;">Chọn ngày và nhân viên để hệ thống đổi giờ làm việc cho nhau.</p>
 
-    // Ngày bắt đầu gốc (Thứ 2, ngày 10/08/2026) -> Lưu ý: tháng trong JS đếm từ 0 (7 là tháng 8)
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">Ngày cần đổi ca</label>
+                    <select id="swapDay" class="form-select">
+                        <option value="1">Thứ 2</option>
+                        <option value="2">Thứ 3</option>
+                        <option value="3">Thứ 4</option>
+                        <option value="4">Thứ 5</option>
+                        <option value="5">Thứ 6</option>
+                        <option value="6">Thứ 7</option>
+                        <option value="7">Chủ nhật</option>
+                    </select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">Nhân viên 1</label>
+                        <select id="swapNv1" class="form-select">
+                            <option value="Nguyễn Văn Admin">Nguyễn Văn Admin</option>
+                            <option value="Trần Thị Admin">Trần Thị Admin</option>
+                            <option value="Nguyễn Văn An">Nguyễn Văn An</option>
+                            <option value="Trần Thị Bình">Trần Thị Bình</option>
+                            <option value="Lê Văn Cường">Lê Văn Cường</option>
+                            <option value="Phạm Thị Dung">Phạm Thị Dung</option>
+                            <option value="Hoàng Văn Đức">Hoàng Văn Đức</option>
+                            <option value="Vũ Thị Hạnh">Vũ Thị Hạnh</option>
+                            <option value="Đặng Văn Hùng">Đặng Văn Hùng</option>
+                            <option value="Nguyễn Thu Hà">Nguyễn Thu Hà</option>
+                            <option value="Lý Văn Long">Lý Văn Long</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">Nhân viên 2</label>
+                        <select id="swapNv2" class="form-select">
+                            <option value="Lê Văn Cường">Lê Văn Cường</option>
+                            <option value="Nguyễn Văn Admin">Nguyễn Văn Admin</option>
+                            <option value="Trần Thị Admin">Trần Thị Admin</option>
+                            <option value="Nguyễn Văn An">Nguyễn Văn An</option>
+                            <option value="Trần Thị Bình">Trần Thị Bình</option>
+                            <option value="Phạm Thị Dung">Phạm Thị Dung</option>
+                            <option value="Hoàng Văn Đức">Hoàng Văn Đức</option>
+                            <option value="Vũ Thị Hạnh">Vũ Thị Hạnh</option>
+                            <option value="Đặng Văn Hùng">Đặng Văn Hùng</option>
+                            <option value="Nguyễn Thu Hà">Nguyễn Thu Hà</option>
+                            <option value="Lý Văn Long">Lý Văn Long</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- THÊM Ô NHẬP LÝ DO ĐỔI CA -->
+                <div>
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">Lý do đổi ca (Bắt buộc)</label>
+                    <textarea id="swapReason" class="form-control" rows="2" placeholder="Ví dụ: Đổi ca do đi khám bệnh..."></textarea>
+                </div>
+
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius: 6px;">Hủy</button>
+                <button type="button" class="btn btn-success px-4" onclick="xacNhanDoiCa()" style="border-radius: 6px;">
+                    <i class="bi bi-check2-circle me-1"></i> Xác nhận đổi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPT XỬ LÝ CHỨC NĂNG -->
+<script>
+    let currentWeekOffset = 0;
     const baseDate = new Date(2026, 7, 10);
 
-    // Hàm format ngày tháng dạng "dd/MM"
     function formatShortDate(date) {
         let d = date.getDate();
         let m = date.getMonth() + 1;
         return (d < 10 ? '0' + d : d) + '/' + (m < 10 ? '0' + m : m);
     }
 
-    // Hàm format ngày tháng dạng "dd/MM/yyyy"
     function formatFullDate(date) {
         let d = date.getDate();
         let m = date.getMonth() + 1;
@@ -275,15 +361,14 @@
         return (d < 10 ? '0' + d : d) + '/' + (m < 10 ? '0' + m : m) + '/' + y;
     }
 
-    // Hàm xử lý khi bấm nút Tuần trước / Tuần sau
     function changeWeek(direction) {
-        if (direction === 1) { // Tiến lên (Tuần sau)
+        if (direction === 1) {
             if (currentWeekOffset >= 4) {
                 alert('Tính năng này chỉ cho phép xem trước lịch làm việc tối đa 4 tuần (1 tháng)!');
                 return;
             }
             currentWeekOffset++;
-        } else { // Lùi lại (Tuần trước)
+        } else {
             if (currentWeekOffset <= -4) {
                 alert('Chỉ có thể truy xuất lịch sử làm việc tối đa 4 tuần trước!');
                 return;
@@ -291,53 +376,103 @@
             currentWeekOffset--;
         }
 
-        // Gọi hàm render lại ngày tháng trên giao diện
-        renderDates();
-
-        // Gọi hàm xáo trộn lịch làm việc
-        shuffleSchedule();
-    }
-
-    // Hàm tự động tính toán và cập nhật ngày tháng vào HTML
-    function renderDates() {
-        // Tính ngày Thứ 2 của tuần được chọn
         let targetMonday = new Date(baseDate);
         targetMonday.setDate(targetMonday.getDate() + (currentWeekOffset * 7));
 
-        // Tính ngày Chủ nhật của tuần được chọn
         let targetSunday = new Date(targetMonday);
         targetSunday.setDate(targetSunday.getDate() + 6);
 
-        // Cập nhật dòng chữ Tuần từ ngày... đến ngày...
         document.getElementById('week-title').innerText = 'Tuần từ ' + formatFullDate(targetMonday) + ' đến ' + formatFullDate(targetSunday);
 
-        // Cập nhật ngày ở từng cột (Thứ 2 đến Chủ nhật)
-        for (let i = 0; i < 7; i++) {
+        for (let i = 1; i <= 7; i++) {
             let colDate = new Date(targetMonday);
-            colDate.setDate(colDate.getDate() + i);
+            colDate.setDate(colDate.getDate() + (i - 1));
             document.getElementById('date-col-' + i).innerText = formatShortDate(colDate);
         }
     }
 
-    // Hàm xáo trộn nhân viên trong các ngày của tuần (Shuffle)
-    function shuffleSchedule() {
-        // Lấy tất cả các hàng (4 ca làm việc)
-        const rows = document.querySelectorAll('tbody tr');
+    // HÀM XỬ LÝ ĐỔI CA
+    function xacNhanDoiCa() {
+        const daySelect = document.getElementById('swapDay');
+        const colIndex = parseInt(daySelect.value);
+        const dayName = daySelect.options[daySelect.selectedIndex].text;
+
+        const nv1 = document.getElementById('swapNv1').value;
+        const nv2 = document.getElementById('swapNv2').value;
+        const reason = document.getElementById('swapReason').value.trim();
+
+        if (nv1 === nv2) {
+            alert("Vui lòng chọn 2 nhân viên khác nhau để tráo đổi ca!");
+            return;
+        }
+
+        if (!reason) {
+            alert("Vui lòng nhập lý do đổi ca để lưu nhật ký!");
+            document.getElementById('swapReason').focus();
+            return;
+        }
+
+        const rows = document.querySelectorAll('#lichTable tbody tr');
+        let node1 = null;
+        let node2 = null;
 
         rows.forEach(row => {
-            // Lấy các ô từ Thứ 2 đến Chủ nhật (bỏ qua ô đầu tiên là Khung giờ)
-            const cells = Array.from(row.querySelectorAll('td')).slice(1);
+            const td = row.querySelectorAll('td')[colIndex];
+            const badges = td.querySelectorAll('.badge-nv');
 
-            // Thuật toán xáo trộn mảng (Fisher-Yates)
-            for (let i = cells.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                // Tráo đổi nội dung HTML (đổi chỗ nhân viên trực)
-                const temp = cells[i].innerHTML;
-                cells[i].innerHTML = cells[j].innerHTML;
-                cells[j].innerHTML = temp;
-            }
+            badges.forEach(b => {
+                if(b.innerText.trim() === nv1) node1 = b;
+                if(b.innerText.trim() === nv2) node2 = b;
+            });
         });
+
+        if (node1 && node2) {
+            const tempText = node1.innerText;
+            node1.innerText = node2.innerText;
+            node2.innerText = tempText;
+
+            const tempBg = node1.style.backgroundColor;
+            const tempColor = node1.style.color;
+
+            node1.style.backgroundColor = node2.style.backgroundColor;
+            node1.style.color = node2.style.color;
+
+            node2.style.backgroundColor = tempBg;
+            node2.style.color = tempColor;
+
+            // ĐÃ SỬA CÚ PHÁP LƯU NHẬT KÝ ĐỂ KHÔNG BỊ JSP BẮT LỖI
+            const logContainer = document.getElementById('nhatKyGhiChu');
+            const emptyLog = document.getElementById('emptyLog');
+            if (emptyLog) emptyLog.style.display = 'none';
+
+            const now = new Date();
+            const timeStr = formatShortDate(now) + ' ' + (now.getHours() < 10 ? '0' : '') + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-2 pb-2 border-bottom';
+            logEntry.innerHTML =
+                '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                '<strong style="color: #4f46e5;">[<i class="bi bi-clock me-1"></i>' + timeStr + ']</strong>' +
+                '<span class="badge bg-light text-dark border">Đổi ca ' + dayName + '</span>' +
+                '</div>' +
+                '<div class="ps-2" style="border-left: 2px solid #cbd5e1;">' +
+                '<b class="text-dark">' + nv1 + '</b> <i class="bi bi-arrow-left-right mx-1 text-muted"></i> <b class="text-dark">' + nv2 + '</b><br>' +
+                '<span class="text-muted"><i class="bi bi-chat-left-text me-1"></i>Lý do: ' + reason + '</span>' +
+                '</div>';
+
+            logContainer.prepend(logEntry);
+
+            alert("Đổi ca thành công! Hệ thống đã ghi nhận lại lịch sử.");
+            document.getElementById('swapReason').value = '';
+
+            const modalEl = document.getElementById('modalSwap');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+        } else {
+            alert("Đổi ca thất bại!\nMột trong hai (hoặc cả hai) nhân viên này không có ca trực trong ngày bạn đã chọn.");
+        }
     }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

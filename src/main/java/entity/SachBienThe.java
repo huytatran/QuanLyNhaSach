@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "BienTheSach")
+@Table(name = "SachBienThe")
 public class SachBienThe {
 
     @Id
@@ -26,14 +26,14 @@ public class SachBienThe {
     private String maBienTheCode;
 
     /** Loại bìa: 'Bìa mềm' | 'Bìa cứng' | 'Bìa da' */
-    @Column(name = "LoaiBia")
+    @Column(name = "BiaSach")
     private String biaSach;
 
     /** Ngôn ngữ: 'Tiếng Việt' | 'Tiếng Anh' | ... */
     @Column(name = "NgonNgu")
     private String ngonNgu;
 
-    @Column(name = "GiaBan", nullable = false)
+    @Column(name = "GiaBienThe", nullable = false)
     private BigDecimal giaBienThe;
 
     /** Bí danh giúp JSP/Servlet gọi getGiaBan() cho nhất quán với Sach */

@@ -47,6 +47,7 @@ public class SachServlet extends HttpServlet {
     private final BoSachDAO boSachDAO = new BoSachDAO();
     private final TacGiaDAO tacGiaDAO = new TacGiaDAO();
     private final SachBienTheDAO bienTheDAO = new SachBienTheDAO();
+    private final SachVatLyDAO sachVatLyDAO = new SachVatLyDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -180,6 +181,7 @@ public class SachServlet extends HttpServlet {
         String maBoSachStr = request.getParameter("maBoSach");
         String soPhanStr = request.getParameter("soPhan");
         String maTacGiaStr = request.getParameter("maTacGia");
+        String soLuongBanDauStr = request.getParameter("soLuongBanDau");
 
         // ---- Kiem tra hop le du lieu dau vao ----
         String loi = kiemTraHopLe(maSach, tenSach, giaBanStr, maTLStr, maNXBStr);
@@ -207,6 +209,8 @@ public class SachServlet extends HttpServlet {
         try {
             if ("sua".equals(mode)) {
                 sachDAO.update(sach, maTacGia);
+                // Nhap them kho khi sua sach (neu nguoi dung nhap so luong > 0)
+                nhapKhoBanDau(maSach.trim(), soLuongBanDauStr);
             } else {
                 boolean thanhCong = sachDAO.insert(sach, maTacGia);
                 if (!thanhCong) {
@@ -220,6 +224,8 @@ public class SachServlet extends HttpServlet {
                 }
                 // Luu bien the kem theo (neu nguoi dung them khi tao moi sach)
                 luuBienTheTuForm(request, maSach.trim());
+                // Nhap kho ban dau neu nguoi dung nhap so luong > 0
+                nhapKhoBanDau(maSach.trim(), soLuongBanDauStr);
             }
         } catch (RuntimeException e) {
             request.setAttribute("thongBaoLoi", "Không thể lưu sách: " + e.getMessage());
@@ -464,6 +470,42 @@ public class SachServlet extends HttpServlet {
             } catch (Exception ignored) {
                 // Bo qua loi 1 dong bien the, khong cancel toan bo
             }
+        }
+    }
+
+    /**
+     * Tự động tạo và nhập kho các bản SachVatLy.
+     * Serial được sinh theo dạng: {maSach}-{STT 3 chữ số}, tiếp nối từ số hiện có.
+     * VD: đã có 5 cuốn → nhập thêm 3 → tạo serial -006, -007, -008.
+     * Bỏ qua nếu soLuongStr rỗng, null, hoặc <= 0.
+     */
+    private void nhapKhoBanDau(String maSach, String soLuongStr) {
+        int soLuong;
+        try {
+            soLuong = Integer.parseInt(soLuongStr == null ? "0" : soLuongStr.trim());
+        } catch (NumberFormatException e) {
+            return;
+        }
+        if (soLuong <= 0) return;
+
+        // Lay so luong hien co de tiep noi STT serial
+        long offset = sachVatLyDAO.countBySach(maSach);
+
+        Sach sachRef = new Sach();
+        sachRef.setMaSach(maSach);
+
+        java.util.List<SachVatLy> list = new java.util.ArrayList<>();
+        for (int i = 1; i <= soLuong; i++) {
+            SachVatLy sv = new SachVatLy();
+            sv.setMaSerial(maSach + "-" + String.format("%03d", offset + i));
+            sv.setSach(sachRef);
+            sv.setTrangThai("Có sẵn");
+            list.add(sv);
+        }
+        try {
+            sachVatLyDAO.insertBatch(list);
+        } catch (Exception ignored) {
+            // Khong lam hong toan bo luong luu sach neu nhap kho that bai
         }
     }
 
