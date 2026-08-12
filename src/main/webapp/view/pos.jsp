@@ -189,7 +189,7 @@
                                     <i class="bi bi-plus-circle me-1"></i>Thêm mới
                                 </button>
                             </div>
-                            <select id="selectKhachHang" class="form-select" style="font-size:13.5px;">
+                            <select id="selectKhachHang" class="form-select" style="font-size:13.5px;" onchange="onSelectKhachChange()">
                                 <option value="">-- Chọn khách hàng --</option>
                                 <c:forEach var="kh" items="${dsKhachHang}">
                                     <option value="${kh.maKH}" <c:if test="${kh.maKH == maKHSelected}">selected</c:if>>${kh.tenKH} - ${kh.sdt}</option>
@@ -199,23 +199,31 @@
                                    placeholder="Gõ để lọc khách hàng nhanh..." style="font-size:12px;">
                         </div>
 
-                        <%-- Voucher --%>
+                        <%-- Voucher: hệ thống tự động áp voucher giảm nhiều nhất, người dùng vẫn có thể đổi tay --%>
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label mb-0" style="font-size:12.5px;font-weight:600;color:#475569;">Voucher áp dụng</label>
-                                <span id="lblKhachType" class="badge" style="font-size:11px;display:none;"></span>
+                                <span id="lblKhachType" class="badge bg-info text-dark" style="font-size:11px;display:none;"></span>
                             </div>
+                            <p class="text-muted mb-2" style="font-size:11.5px;">
+                                Hệ thống tự áp voucher giảm nhiều nhất phù hợp. Bạn có thể chọn voucher khác bên dưới nếu muốn.
+                            </p>
                             <div id="appliedVoucherList" class="mb-2" style="display:none;">
-                                <div class="p-2" style="background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;">
-                                    <p class="mb-1" style="font-size:11.5px;color:#64748b;font-weight:600;">Voucher đã áp:</p>
-                                    <div id="appliedVoucherItems"></div>
+                                <div class="p-2 d-flex justify-content-between align-items-center" style="background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;">
+                                    <div>
+                                        <span style="font-size:11.5px;color:#166534;font-weight:600;">Đã áp dụng: </span>
+                                        <span id="lblAppliedCode" class="fw-bold text-success" style="font-size:12.5px;"></span>
+                                    </div>
+                                    <button type="button" onclick="cancelAllVouchers()" class="btn btn-sm btn-link p-0 text-danger text-decoration-none" style="font-size:11.5px;">
+                                        <i class="bi bi-x-circle me-1"></i>Bỏ chọn
+                                    </button>
                                 </div>
                             </div>
                             <div class="d-flex gap-2" id="voucherApplyRow">
                                 <select id="selectVoucher" class="form-select" style="font-size:13.5px;">
                                     <option value="">-- Chọn mã voucher --</option>
                                     <c:forEach var="v" items="${dsVoucher}">
-                                        <option value="${v.maCode}">
+                                        <option value="${v.maCode}" <c:if test="${v.maCode == appliedVoucher}">selected</c:if>>
                                                 ${v.maCode} -
                                             <c:choose>
                                                 <c:when test="${v.loaiGiam == 1}">Giảm ${v.giaTri.intValue()}%</c:when>
@@ -226,7 +234,6 @@
                                     </c:forEach>
                                 </select>
                                 <button type="button" id="btnApplyVoucher" onclick="applyVoucher()" class="btn btn-outline-primary btn-sm px-3">Áp dụng</button>
-                                <button type="button" id="btnCancelVouchers" onclick="cancelAllVouchers()" class="btn btn-outline-danger btn-sm px-3" style="display:none;">Hủy tất cả</button>
                             </div>
                         </div>
 
@@ -354,13 +361,6 @@
     const CTX = '${pageContext.request.contextPath}';
     let currentTongPhaiTra = ${tongTienPhaiTra};
 
-    /* Khởi tạo appliedVouchers từ server */
-    let appliedVouchers = [
-        <c:forEach var="vc" items="${appliedVouchers}" varStatus="vs">
-        "${vc}"<c:if test="${!vs.last}">,</c:if>
-        </c:forEach>
-    ];
-
     /* ===== Alert helper ===== */
     function showAlert(msg, type) {
         const el = document.getElementById('alertBox');
@@ -417,6 +417,21 @@
         }).then(r => r.json());
     }
 
+    // Khi chọn khách hàng trên UI: gọi server để refresh summary (isNewCustomer, appliedVoucher, ...)
+    function onSelectKhachChange() {
+        const p = new URLSearchParams();
+        p.append('action', 'refreshSummary');
+        posPost(p).then(function(data) {
+            if (data.ok) {
+                renderCart(data.cart);
+                renderSummary(data.summary);
+                capNhatTonKho(data.cart);
+            } else {
+                showAlert(data.message || 'Không thể cập nhật thông tin khách', 'error');
+            }
+        }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
+    }
+
     /* ===== Render giỏ hàng ===== */
     function renderCart(cart) {
         const container = document.getElementById('cartItems');
@@ -440,7 +455,7 @@
                 + '<div class="flex-grow-1 overflow-hidden">'
                 + '<div class="fw-semibold text-truncate" style="font-size:13px;">' + escHtml(item.tenSach) + '</div>'
                 + btHtml
-                + '<div class="text-muted" style="font-size:12px;">' + fmtMoney(item.donGia) + ' / cu\u1ed1n</div>'
+                + '<div class="text-muted" style="font-size:12px;">' + fmtMoney(item.donGia) + ' / cuốn</div>'
                 + '<div class="d-flex align-items-center gap-1 mt-1">'
                 + '<input type="number" value="' + item.soLuong + '" min="1" class="form-control form-control-sm" style="width:58px;font-size:12px;" onchange="updateQty(\'' + escHtml(item.key) + '\', this.value)">'
                 + '<button class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:2px 7px;" onclick="removeFromCart(\'' + escHtml(item.key) + '\')"><i class="bi bi-trash"></i></button>'
@@ -453,10 +468,11 @@
         container.innerHTML = html;
     }
 
-    /* ===== Render summary ===== */
+    /* ===== Render summary (khớp servlet: 1 appliedVoucher duy nhất, tự động hoặc thủ công) ===== */
     function renderSummary(summary) {
         currentTongPhaiTra = summary.tongTienPhaiTra;
         document.getElementById('lblTongTienGio').textContent = fmtMoney(summary.tongTienGio);
+
         const rowGiam = document.getElementById('rowGiam');
         if (summary.soTienGiam > 0) {
             rowGiam.style.removeProperty('display');
@@ -466,47 +482,44 @@
         }
         document.getElementById('lblTongPhaiTra').textContent = fmtMoney(summary.tongTienPhaiTra);
 
-        // Applied vouchers
-        appliedVouchers = summary.appliedVouchers || [];
+        // Voucher đang áp dụng (auto hoặc thủ công - server không phân biệt ở JSON, chỉ trả về code hiện tại)
+        const appliedCode = summary.appliedVoucher || '';
         const listDiv = document.getElementById('appliedVoucherList');
-        const itemsDiv = document.getElementById('appliedVoucherItems');
-        if (appliedVouchers.length > 0) {
+        const lblCode = document.getElementById('lblAppliedCode');
+        const selVoucher = document.getElementById('selectVoucher');
+        if (appliedCode.trim() !== '') {
             listDiv.style.display = '';
-            document.getElementById('btnCancelVouchers').style.display = '';
-            itemsDiv.innerHTML = appliedVouchers.map(function(vc) {
-                return '<div class="d-flex justify-content-between align-items-center mb-1">'
-                    + '<span style="font-size:12px;">' + escHtml(vc) + '</span>'
-                    + '<button class="btn btn-sm btn-link p-0 text-danger" style="font-size:11px;text-decoration:none;"'
-                    + ' onclick="removeVoucher(\'' + escHtml(vc) + '\')"><i class="bi bi-x-lg"></i></button>'
-                    + '</div>';
-            }).join('');
+            lblCode.textContent = appliedCode;
+            selVoucher.value = appliedCode;
         } else {
             listDiv.style.display = 'none';
-            document.getElementById('btnCancelVouchers').style.display = 'none';
+            lblCode.textContent = '';
+            selVoucher.value = '';
         }
-        const btnApply = document.getElementById('btnApplyVoucher');
-        const selVoucher = document.getElementById('selectVoucher');
-        if (appliedVouchers.length >= 2) {
-            btnApply.disabled = true; selVoucher.disabled = true;
-        } else {
-            btnApply.disabled = false; selVoucher.disabled = false;
-        }
+
+        // Badge loại khách hàng (chỉ hiện khi đã chọn khách)
+         const badge = document.getElementById('lblKhachType');
+         if (typeof summary.isNewCustomer !== 'undefined' && selectKH.value) {
+             badge.style.display = '';
+             badge.textContent = summary.isNewCustomer ? 'Khách mới' : 'Khách quen';
+         } else {
+             badge.style.display = 'none';
+         }
+
         tinhTienThoi();
     }
 
     /* ===== Cập nhật tồn kho hiển thị trong bảng sách ===== */
     function capNhatTonKho(cart) {
-        // Tính tổng số lượng đang trong giỏ theo maSach
         const gioMap = {};
         cart.forEach(function(item) {
             gioMap[item.maSach] = (gioMap[item.maSach] || 0) + item.soLuong;
         });
-        // Cập nhật cột Tồn trong bảng sách
         document.querySelectorAll('#sachTableBody tr').forEach(function(row) {
-            const maCell = row.cells[1]; // cột Mã sách
+            const maCell = row.cells[1];
             if (!maCell) return;
             const maSach = maCell.textContent.trim();
-            const tonCell = row.cells[4]; // cột Tồn
+            const tonCell = row.cells[4];
             if (!tonCell) return;
             const tonGoc = parseInt(tonCell.getAttribute('data-ton-goc') || tonCell.textContent.trim()) || 0;
             if (!tonCell.hasAttribute('data-ton-goc')) {
@@ -515,7 +528,6 @@
             const trongGio = gioMap[maSach] || 0;
             const conLai = Math.max(0, tonGoc - trongGio);
             tonCell.textContent = conLai;
-            // Disable nút thêm nếu hết hàng
             const btn = row.querySelector('button.btn');
             if (btn) btn.disabled = conLai === 0;
         });
@@ -563,6 +575,7 @@
         }).catch(function(e) { showAlert('Lỗi kết nối: ' + e, 'error'); });
     }
 
+    /* Chọn tay voucher khác voucher đang được tự động áp (servlet sẽ đánh dấu manualVoucher=true) */
     function applyVoucher() {
         const maCode = document.getElementById('selectVoucher').value;
         if (!maCode) { showAlert('Vui lòng chọn voucher', 'error'); return; }
@@ -575,16 +588,7 @@
         }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
     }
 
-    function removeVoucher(maCode) {
-        const p = new URLSearchParams();
-        p.append('action', 'removeAppliedVoucher');
-        p.append('maCode', maCode);
-        posPost(p).then(data => {
-            if (data.ok) { renderCart(data.cart); renderSummary(data.summary); }
-            else showAlert(data.message, 'error');
-        }).catch(e => showAlert('Lỗi kết nối: ' + e, 'error'));
-    }
-
+    /* Bỏ voucher (thủ công) - servlet đánh dấu manualVoucher=true, sẽ không tự chọn lại cho tới khi đổi khách/checkout/xóa giỏ */
     function cancelAllVouchers() {
         const p = new URLSearchParams();
         p.append('action', 'cancelAllVouchers');
@@ -605,7 +609,7 @@
             if (data.ok) {
                 showAlert('Tạo đơn hàng #' + data.maDH + ' thành công.', 'success');
                 renderCart([]);
-                renderSummary({ tongTienGio: 0, soTienGiam: 0, tongTienPhaiTra: 0, appliedVouchers: [] });
+                renderSummary({ tongTienGio: 0, soTienGiam: 0, tongTienPhaiTra: 0, appliedVoucher: '' });
                 document.getElementById('tienKhachDua').value = '';
                 selectKH.value = '';
             } else showAlert(data.message, 'error');
@@ -637,7 +641,7 @@
                     });
                     giaHtml += '</select>';
                 } else {
-                    giaHtml = '<span style="font-size:13px;">' + Math.round(s.giaBan).toLocaleString('vi-VN') + ' \u20ab</span>';
+                    giaHtml = '<span style="font-size:13px;">' + Math.round(s.giaBan).toLocaleString('vi-VN') + ' ₫</span>';
                 }
                 const addCall = hasBT
                     ? 'addToCart(\'' + escHtml(s.maSach) + '\', document.getElementById(\'' + escHtml(selectId) + '\').value)'
@@ -692,6 +696,8 @@
                 selectKH.add(newOpt);
                 originalOptions.push(newOpt.cloneNode(true));
                 selectKH.value = data.maKH;
+                        // Khi thêm khách nhanh: thông báo server để cập nhật summary (isNewCustomer, voucher...)
+                        try { onSelectKhachChange(); } catch (e) { /* ignore */ }
                 bootstrap.Modal.getInstance(document.getElementById('modalThemKH')).hide();
                 document.getElementById('newTenKH').value = '';
                 document.getElementById('newSdtKH').value = '';
@@ -720,33 +726,27 @@
     }
 
     function moModalVietQR() {
-        // Lấy số tiền phải trả hiện tại (đồng bộ với giỏ hàng qua AJAX)
         const soTienRaw = Math.round(currentTongPhaiTra) || 0;
 
         const maDonTam  = genMaDonTam();
         const noiDung   = encodeURIComponent('TT don ' + maDonTam);
         const soTienFmt = soTienRaw.toLocaleString('vi-VN') + ' ₫';
 
-        // Cập nhật thông tin hiển thị
         document.getElementById('qrSoTien').textContent  = soTienFmt;
         document.getElementById('qrNoiDung').textContent = 'TT don ' + maDonTam;
 
-        // Reset trạng thái loading
         document.getElementById('qrLoadingSpinner').style.display = 'block';
         document.getElementById('qrImageWrapper').style.display   = 'none';
         document.getElementById('qrErrorMsg').style.display       = 'none';
 
-        // Hiện modal
         new bootstrap.Modal(document.getElementById('modalVietQR')).show();
 
-        // Build URL VietQR (dùng template compact2 để có logo ngân hàng + số tiền)
         const qrUrl = 'https://img.vietqr.io/image/'
             + VIETQR_BANK + '-' + VIETQR_ACCOUNT + '-compact2.png'
             + '?amount=' + soTienRaw
             + '&addInfo=' + noiDung
             + '&accountName=' + VIETQR_NAME;
 
-        // Load ảnh QR
         const img = document.getElementById('qrImage');
         img.onload = function() {
             document.getElementById('qrLoadingSpinner').style.display = 'none';
@@ -761,12 +761,13 @@
         img.src = qrUrl;
     }
 
-    /* Khởi tạo summary từ server khi load trang */
+    /* Khởi tạo summary từ server khi load trang (voucher đã được servlet tự động chọn sẵn nếu có) */
     renderSummary({
         tongTienGio: ${tongTienGio},
         soTienGiam: ${soTienGiam},
         tongTienPhaiTra: ${tongTienPhaiTra},
-        appliedVouchers: appliedVouchers
+        appliedVoucher: '${appliedVoucher}',
+        isNewCustomer: ${isNewCustomer}
     });
 </script>
 </body>

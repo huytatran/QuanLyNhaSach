@@ -188,4 +188,30 @@ public class VoucherRepo {
             e.printStackTrace();
         }
     }
+
+    // 6. Tìm voucher giảm giá được NHIỀU TIỀN NHẤT cho đơn hàng
+    public Voucher findBestVoucher(BigDecimal tongTien, boolean isNewCustomer) {
+        List<Voucher> dsHopLe = getVouchersHopLe();
+        if (dsHopLe == null || dsHopLe.isEmpty() || tongTien == null || tongTien.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+
+        Voucher bestVoucher = null;
+        BigDecimal maxGiam = BigDecimal.ZERO;
+
+        for (Voucher v : dsHopLe) {
+            // Lọc theo loại khách hàng
+            String code = v.getMaCode().toUpperCase();
+            if (isNewCustomer && code.contains("MEMBER")) continue;
+            if (!isNewCustomer && code.contains("WELCOME")) continue;
+
+            // Tính tiền giảm thử
+            BigDecimal giam = tinhTienGiamGia(v.getMaCode(), tongTien);
+            if (giam.compareTo(maxGiam) > 0) {
+                maxGiam = giam;
+                bestVoucher = v;
+            }
+        }
+        return bestVoucher;
+    }
 }
