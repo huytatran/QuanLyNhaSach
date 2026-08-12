@@ -203,20 +203,25 @@
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label mb-0" style="font-size:12.5px;font-weight:600;color:#475569;">Voucher áp dụng</label>
-                                <span id="lblKhachType" class="badge" style="font-size:11px;display:none;"></span>
+                                <span id="lblKhachType" class="badge bg-info text-dark" style="font-size:11px;display:none;"></span>
                             </div>
                             <div id="appliedVoucherList" class="mb-2" style="display:none;">
-                                <div class="p-2" style="background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;">
-                                    <p class="mb-1" style="font-size:11.5px;color:#64748b;font-weight:600;">Voucher đã áp:</p>
-                                    <div id="appliedVoucherItems"></div>
+                                <div class="p-2 d-flex justify-content-between align-items-center" style="background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;">
+                                    <div>
+                                        <span style="font-size:11.5px;color:#166534;font-weight:600;">Đã áp dụng: </span>
+                                        <span id="lblAppliedCode" class="fw-bold text-success" style="font-size:12.5px;"></span>
+                                    </div>
+                                    <button type="button" onclick="cancelAllVouchers()" class="btn btn-sm btn-link p-0 text-danger text-decoration-none" style="font-size:11.5px;">
+                                        <i class="bi bi-x-circle me-1"></i>Bỏ chọn
+                                    </button>
                                 </div>
                             </div>
                             <div class="d-flex gap-2" id="voucherApplyRow">
                                 <select id="selectVoucher" class="form-select" style="font-size:13.5px;">
                                     <option value="">-- Chọn mã voucher --</option>
                                     <c:forEach var="v" items="${dsVoucher}">
-                                        <option value="${v.maCode}">
-                                            ${v.maCode} -
+                                        <option value="${v.maCode}" <c:if test="${v.maCode == appliedVoucher}">selected</c:if>>
+                                                ${v.maCode} -
                                             <c:choose>
                                                 <c:when test="${v.loaiGiam == 1}">Giảm ${v.giaTri.intValue()}%</c:when>
                                                 <c:otherwise>Giảm <fmt:formatNumber value="${v.giaTri}" pattern="#,##0"/>đ</c:otherwise>
@@ -226,7 +231,6 @@
                                     </c:forEach>
                                 </select>
                                 <button type="button" id="btnApplyVoucher" onclick="applyVoucher()" class="btn btn-outline-primary btn-sm px-3">Áp dụng</button>
-                                <button type="button" id="btnCancelVouchers" onclick="cancelAllVouchers()" class="btn btn-outline-danger btn-sm px-3" style="display:none;">Hủy tất cả</button>
                             </div>
                         </div>
 
@@ -642,12 +646,35 @@
     }
 
     /* Khởi tạo summary từ server khi load trang */
-    renderSummary({
-        tongTienGio: ${tongTienGio},
-        soTienGiam: ${soTienGiam},
-        tongTienPhaiTra: ${tongTienPhaiTra},
-        appliedVouchers: appliedVouchers
-    });
+    function renderSummary(summary) {
+        currentTongPhaiTra = summary.tongTienPhaiTra;
+        document.getElementById('lblTongTienGio').textContent = fmtMoney(summary.tongTienGio);
+        const rowGiam = document.getElementById('rowGiam');
+        if (summary.soTienGiam > 0) {
+            rowGiam.style.removeProperty('display');
+            document.getElementById('lblSoTienGiam').textContent = '-' + fmtMoney(summary.soTienGiam);
+        } else {
+            rowGiam.style.display = 'none';
+        }
+        document.getElementById('lblTongPhaiTra').textContent = fmtMoney(summary.tongTienPhaiTra);
+
+        // Hiển thị voucher đơn
+        const appliedCode = summary.appliedVoucher || "";
+        const listDiv = document.getElementById('appliedVoucherList');
+        const lblCode = document.getElementById('lblAppliedCode');
+        const selVoucher = document.getElementById('selectVoucher');
+
+        if (appliedCode && appliedCode.trim() !== "") {
+            listDiv.style.display = '';
+            lblCode.textContent = appliedCode;
+            selVoucher.value = appliedCode;
+        } else {
+            listDiv.style.display = 'none';
+            lblCode.textContent = '';
+            selVoucher.value = '';
+        }
+        tinhTienThoi();
+    }
 </script>
 </body>
 </html>
