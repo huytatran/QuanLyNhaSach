@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <html>
@@ -72,7 +72,7 @@
                         <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-search"></i></span>
                         <input type="text" name="q" value="${tuKhoa}" class="form-control border-0" placeholder="Tìm theo tên hoặc mã sách..." style="font-size: 13.5px; box-shadow: none;">
                     </div>
-                    <button type="submit" class="btn btn-outline-secondary" style="border-radius: 6px; font-size: 13px;">Tìm</button>
+                    <button type="submit" class="btn text-white" style="background:#4f46e5;border-radius:6px;font-size:13px;">Tìm</button>
                     <c:if test="${not empty tuKhoa}">
                         <a href="${pageContext.request.contextPath}/sach" class="btn btn-link text-decoration-none" style="font-size: 13px;">Xóa lọc</a>
                     </c:if>
@@ -150,15 +150,15 @@
                                 </form>
                             </td>
                             <td class="text-end pe-3">
-                                <button type="button" class="btn btn-sm btn-outline-success me-1" style="border-radius: 6px;" title="Nhập kho"
+                                <button type="button" class="btn btn-sm me-1 text-white" style="background:#10b981;border-radius:6px;" title="Nhập kho"
                                         data-bs-toggle="modal" data-bs-target="#nhapSachVatLyModal" data-ma-sach="${s.maSach}">
                                     <i class="bi bi-box-arrow-in-right"></i>
                                 </button>
                                 <a href="${pageContext.request.contextPath}/sach?action=edit&ma=${s.maSach}"
-                                   class="btn btn-sm btn-outline-secondary me-1" style="border-radius: 6px;" title="Sửa">
+                                   class="btn btn-sm me-1 text-white" style="background:#3b82f6;border-radius:6px;" title="Sửa">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius: 6px;" title="Ngừng kinh doanh"
+                                <button type="button" class="btn btn-sm text-white" style="background:#ef4444;border-radius:6px;" title="Ngừng kinh doanh"
                                         onclick="xacNhanXoa('${s.maSach}', '${s.tenSach}')">
                                     <i class="bi bi-trash"></i>
                                 </button>

@@ -17,6 +17,9 @@ public class AuthorizationFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
 
+        request.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("UTF-8");
+
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
         HttpSession session = req.getSession(false);
@@ -31,6 +34,10 @@ public class AuthorizationFilter implements Filter {
                 || requestURI.startsWith(contextPath + "/images/")
                 || requestURI.startsWith(contextPath + "/assets/")
                 || requestURI.startsWith(contextPath + "/book-images/");
+
+        if (!isStaticResource) {
+            res.setContentType("text/html; charset=UTF-8");
+        }
 
         // 2. Kiểm tra xem đã đăng nhập chưa
         boolean isLoggedIn = (session != null && session.getAttribute("currentUser") != null);

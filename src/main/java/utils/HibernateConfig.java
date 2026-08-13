@@ -18,10 +18,11 @@ public class HibernateConfig {
         Properties properties = new Properties();
         properties.put(Environment.DIALECT, "org.hibernate.dialect.SQLServerDialect");
         properties.put(Environment.DRIVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;");
+        properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;sendStringParametersAsUnicode=true;useUnicode=true;characterEncoding=UTF-8;");
         properties.put(Environment.USER, "sa");
-        properties.put(Environment.PASS, "qưerty123");
+        properties.put(Environment.PASS, "123456");
         properties.put(Environment.SHOW_SQL, "true");
+        properties.put(Environment.HBM2DDL_AUTO, "update");
 
         /*Ht272705
             - Khai báo cho Hibernate biết các Class nào trong Java sẽ được ánh xạ xuống database

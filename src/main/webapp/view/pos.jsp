@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" deferredSyntaxAllowedAsLiteral="true" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" deferredSyntaxAllowedAsLiteral="true" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <html>
@@ -88,14 +88,14 @@
                                             <c:when test="${not empty dsBT}">
                                                 <button class="btn btn-sm text-white" style="background:#4f46e5;border-radius:6px;"
                                                         onclick="addToCart('${s.maSach}', document.getElementById('bt_${s.maSach}').value)"
-                                                    ${ton == 0 ? 'disabled' : ''}>
+                                                        <c:if test="${ton == 0}">disabled</c:if>>
                                                     <i class="bi bi-cart-plus"></i>
                                                 </button>
                                             </c:when>
                                             <c:otherwise>
                                                 <button class="btn btn-sm text-white" style="background:#4f46e5;border-radius:6px;"
                                                         onclick="addToCart('${s.maSach}', '')"
-                                                    ${ton == 0 ? 'disabled' : ''}>
+                                                        <c:if test="${ton == 0}">disabled</c:if>>
                                                     <i class="bi bi-cart-plus"></i>
                                                 </button>
                                             </c:otherwise>
