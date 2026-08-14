@@ -504,8 +504,8 @@ public class DonHangDAO {
 
     /**
      * Moi: Doi mot phan (hoac toan bo) so luong cua MOT dong chi tiet don hang sang sach khac.
-     * Chi cho phep doi sang sach co gia BANG hoac CAO HON gia dong hien tai (khach tra them
-     * phan chenh lech neu co, khong doi sang gia thap hon). Khong dung bang/cot moi:
+     * Cho phep doi sang sach co gia BANG, CAO HON hoac THAP HON gia dong hien tai (khach tra
+     * them phan chenh lech neu gia cao hon, duoc hoan lai neu gia thap hon). Khong dung bang/cot moi:
      * tao them 1 dong ChiTietDonHang MOI cho sach da doi toi (dong ChiTietDonHang la du lieu
      * bth cua bang co san, khong phai thay doi cau truc). "Con lai" cua dong moi nay lai
      * duoc suy ra dung nhu tren, tu SachVatLy.
@@ -538,12 +538,10 @@ public class DonHangDAO {
             }
 
             BigDecimal giaCu = ct.getDonGia();
+            // Gia moi >= gia cu: khach tra them chenh lech. Gia moi < gia cu: cua hang hoan
+            // lai chenh lech cho khach (chenhLech tinh ben duoi se am, van dung DECIMAL(12,2)
+            // nhu schema QuanLyNhaSach.sql khai bao cho DonGia/GiaBan/TongTien/ChenhLechTien).
             BigDecimal giaMoi = sachMoi.getGiaBan() != null ? sachMoi.getGiaBan() : BigDecimal.ZERO;
-            if (giaMoi.compareTo(giaCu) < 0) {
-                throw new IllegalArgumentException(
-                        "Chỉ được đổi sang sách có giá bằng hoặc cao hơn sách cũ (" +
-                                giaCu.toPlainString() + " đ).");
-            }
 
             // Sach moi phai con du hang trong kho
             List<SachVatLy> cuonSachMoi = session.createQuery(
