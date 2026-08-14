@@ -10,11 +10,12 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
-// Đã bổ sung thêm đường dẫn /voucher/het-han vào đây
 @WebServlet({"/voucher/hien-thi", "/voucher/them", "/voucher/het-han"})
 public class VoucherServlet extends HttpServlet {
 
@@ -27,41 +28,99 @@ public class VoucherServlet extends HttpServlet {
         // 1. CHỨC NĂNG XÓA MỀM (CHUYỂN TRẠNG THÁI HẾT HẠN)
         if (uri.contains("/het-han")) {
             try {
-                // Lấy mã voucher từ URL (nút thùng rác gửi lên)
                 Integer maVoucher = Integer.parseInt(request.getParameter("ma"));
-                // Gọi repo để cập nhật ngày kết thúc về hiện tại
                 voucherRepo.updateTrangThaiHetHan(maVoucher);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            // Xong việc thì quay lại trang hiển thị
             response.sendRedirect(request.getContextPath() + "/voucher/hien-thi");
-            return; // Phải có return để dừng xử lý code bên dưới
+            return;
         }
 
-        // 2. CHỨC NĂNG HIỂN THỊ VÀ PHÂN TRANG
+        // 2. CHỨC NĂNG HIỂN THỊ, LỌC VÀ PHÂN TRANG (ĐÃ TỐI ƯU BẰNG JAVA STREAM)
         if (uri.contains("/hien-thi")) {
-            int page = 1; // Mặc định ở trang 1
-            int pageSize = 5; // Số lượng voucher trên 1 trang (bạn có thể đổi số này)
+            int page = 1;
+            int pageSize = 5;
 
-            // Nếu có tham số page trên URL thì lấy giá trị đó
             if (request.getParameter("page") != null) {
                 try {
                     page = Integer.parseInt(request.getParameter("page"));
                 } catch (NumberFormatException e) {
-                    page = 1; // Tránh lỗi nếu người dùng nhập linh tinh
+                    page = 1;
                 }
             }
 
-            // Gọi hàm lấy danh sách theo phân trang
-            List<Voucher> listVoucher = voucherRepo.getVouchersByPage(page, pageSize);
+            // Lấy TẤT CẢ dữ liệu từ Database lên (Truyền số trang lớn để lấy hết)
+            // Trick này giúp bạn không cần viết thêm hàm SQL phức tạp trong DAO
+            List<Voucher> listAll = voucherRepo.getVouchersByPage(1, 999999);
 
-            // Tính toán tổng số trang
-            int totalVouchers = voucherRepo.getTotalCount();
+            // BẮT CÁC THAM SỐ TỪ FORM BỘ LỌC BÊN JSP GỬI LÊN
+            String searchCode = request.getParameter("searchCode");
+            String filterCodeDropdown = request.getParameter("filterCodeDropdown");
+            String filterStatus = request.getParameter("filterStatus");
+            String filterDate = request.getParameter("filterDate");
+
+            LocalDateTime now = LocalDateTime.now();
+
+            // SỬ DỤNG JAVA STREAM ĐỂ LỌC DỮ LIỆU
+            List<Voucher> filteredList = listAll.stream().filter(v -> {
+                // Lọc theo ô gõ tìm kiếm
+                boolean matchSearch = (searchCode == null || searchCode.trim().isEmpty())
+                        || v.getMaCode().toLowerCase().contains(searchCode.trim().toLowerCase());
+
+                // Lọc theo Dropdown chọn mã
+                boolean matchDropdown = (filterCodeDropdown == null || filterCodeDropdown.trim().isEmpty())
+                        || v.getMaCode().equalsIgnoreCase(filterCodeDropdown.trim());
+
+                // Lọc theo Trạng thái (Tính toán trạng thái động y hệt bên giao diện)
+                boolean matchStatus = true;
+                if (filterStatus != null && !filterStatus.trim().isEmpty()) {
+                    String currentStatus = "Đang chạy";
+                    if (v.getDaSuDung() >= v.getSoLuongToiDa()) { currentStatus = "Hết lượt"; }
+                    else if (now.isAfter(v.getNgayKetThuc())) { currentStatus = "Đã kết thúc"; }
+                    else if (now.isBefore(v.getNgayBatDau())) { currentStatus = "Sắp diễn ra"; }
+
+                    if (filterStatus.equals("Đã kết thúc")) {
+                        matchStatus = currentStatus.equals("Đã kết thúc") || currentStatus.equals("Hết lượt");
+                    } else {
+                        matchStatus = currentStatus.equals(filterStatus);
+                    }
+                }
+
+                // Lọc theo Ngày (Kiểm tra xem ngày chọn có rơi vào thời gian hiệu lực không)
+                boolean matchDate = true;
+                if (filterDate != null && !filterDate.trim().isEmpty()) {
+                    try {
+                        LocalDate selectedDate = LocalDate.parse(filterDate);
+                        LocalDate startDate = v.getNgayBatDau().toLocalDate();
+                        LocalDate endDate = v.getNgayKetThuc().toLocalDate();
+                        matchDate = !selectedDate.isBefore(startDate) && !selectedDate.isAfter(endDate);
+                    } catch (Exception e) {
+                        matchDate = true; // Bỏ qua nếu lỗi format ngày
+                    }
+                }
+
+                // Phải thỏa mãn TẤT CẢ các bộ lọc thì mới giữ lại
+                return matchSearch && matchDropdown && matchStatus && matchDate;
+
+            }).collect(Collectors.toList());
+
+            // TÍNH TOÁN LẠI PHÂN TRANG DỰA TRÊN DANH SÁCH ĐÃ LỌC
+            int totalVouchers = filteredList.size();
             int totalPages = (int) Math.ceil((double) totalVouchers / pageSize);
 
+            if (page > totalPages && totalPages > 0) { page = totalPages; }
+            if (page < 1) { page = 1; }
+
+            int fromIndex = (page - 1) * pageSize;
+            int toIndex = Math.min(fromIndex + pageSize, totalVouchers);
+
+            // Cắt danh sách lấy đúng 5 phần tử của trang hiện tại
+            List<Voucher> pagedList = filteredList.subList(fromIndex, toIndex);
+
             // Gửi dữ liệu sang JSP
-            request.setAttribute("listVoucher", listVoucher);
+            request.setAttribute("listAllVoucher", listAll); // Truyền toàn bộ sang để Dropdown chọn mã hiển thị đủ
+            request.setAttribute("listVoucher", pagedList);  // Truyền phần đã lọc và cắt trang sang bảng
             request.setAttribute("currentPage", page);
             request.setAttribute("totalPages", totalPages);
 
