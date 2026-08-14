@@ -177,18 +177,18 @@
                                             <label class="form-label" style="font-size:13px;">Số lượng đổi (tối đa ${conLai})</label>
                                             <input type="number" name="soLuong" class="form-control mb-3" min="1" max="${conLai}" value="1" required>
 
-                                            <label class="form-label" style="font-size:13px;">Đổi sang sách (chỉ hiện sách giá ≥ ${ct.donGia})</label>
+                                            <label class="form-label" style="font-size:13px;">Đổi sang sách</label>
                                             <select name="maSachMoi" class="form-select" required>
                                                 <option value="" disabled selected>-- Chọn sách --</option>
                                                 <c:forEach var="s" items="${danhSachSachDangBan}">
-                                                    <c:if test="${s.giaBan >= ct.donGia && s.maSach != ct.sach.maSach}">
+                                                    <c:if test="${s.maSach != ct.sach.maSach}">
                                                         <option value="${s.maSach}">
                                                                 ${s.tenSach} — <fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫
                                                         </option>
                                                     </c:if>
                                                 </c:forEach>
                                             </select>
-                                            <div class="form-text mb-3">Nếu sách mới có giá cao hơn, khách cần trả thêm phần chênh lệch.</div>
+                                            <div class="form-text mb-3">Giá cao hơn: khách trả thêm chênh lệch. Giá thấp hơn: cửa hàng hoàn lại chênh lệch.</div>
 
                                             <label class="form-label" style="font-size:13px;">Lý do đổi <span class="text-muted">(không bắt buộc)</span></label>
                                             <textarea name="lyDo" class="form-control" rows="2" maxlength="255" placeholder="VD: sai kích cỡ, khách muốn tập khác..."></textarea>
