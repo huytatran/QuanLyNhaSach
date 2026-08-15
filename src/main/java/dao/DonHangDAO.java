@@ -22,6 +22,9 @@ public class DonHangDAO {
      * Moi: thu nho SoTienGiam (giam gia voucher, von duoc chot 1 lan luc tao don) theo dung
      * ty le voi phan gia tri hang con lai, moi khi tra/doi lam giam gia tri hang trong don.
      * Neu khong lam viec nay, tra het hang se khien TongTien = 0 - SoTienGiam (con nguyen) < 0.
+     * Rieng neu gia tri hang con lai TUT XUONG DUOI muc toi thieu cua voucher (GiaTriDonToiThieu),
+     * don khong con du dieu kien huong voucher do nua -> huy han giam gia (SoTienGiam = 0),
+     * thay vi chi giam theo ty le.
      * @param dh              don hang can cap nhat (se bi sua TongTien va SoTienGiam)
      * @param giaTriHangGiam  phan gia tri hang GIAM DI do lan tra/doi nay (> 0)
      */
@@ -31,11 +34,17 @@ public class DonHangDAO {
         BigDecimal sau = truoc.subtract(giaTriHangGiam);
         if (sau.compareTo(BigDecimal.ZERO) < 0) sau = BigDecimal.ZERO;
 
-        BigDecimal soTienGiamMoi = soTienGiamCu;
-        if (soTienGiamCu.compareTo(BigDecimal.ZERO) > 0 && truoc.compareTo(BigDecimal.ZERO) > 0) {
+        Voucher vc = dh.getVoucher();
+        boolean conDuDieuKienVoucher = vc == null || vc.getGiaTriDonToiThieu() == null
+                || sau.compareTo(vc.getGiaTriDonToiThieu()) >= 0;
+
+        BigDecimal soTienGiamMoi = BigDecimal.ZERO;
+        if (conDuDieuKienVoucher && soTienGiamCu.compareTo(BigDecimal.ZERO) > 0 && truoc.compareTo(BigDecimal.ZERO) > 0) {
             soTienGiamMoi = soTienGiamCu.multiply(sau)
                     .divide(truoc, 2, java.math.RoundingMode.HALF_UP);
         }
+        // Khong con du dieu kien toi thieu -> soTienGiamMoi giu nguyen = 0 (huy han giam gia)
+
         BigDecimal tongTienMoi = sau.subtract(soTienGiamMoi);
         if (tongTienMoi.compareTo(BigDecimal.ZERO) < 0) tongTienMoi = BigDecimal.ZERO; // an toan, khong bao gio am
 
