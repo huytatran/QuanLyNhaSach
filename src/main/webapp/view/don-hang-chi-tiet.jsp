@@ -79,7 +79,6 @@
                         <th class="ps-4">Sách</th>
                         <th class="text-center">Số lượng</th>
                         <th class="text-end">Đơn giá</th>
-                        <th class="text-end">Thành tiền</th>
                         <th class="text-center">Còn lại</th>
                         <th class="text-center pe-4 no-print">Thao tác</th>
                     </tr>
@@ -95,8 +94,6 @@
                             </td>
                             <td class="text-center">${ct.soLuong}</td>
                             <td class="text-end"><fmt:formatNumber value="${ct.donGia}" pattern="#,##0"/> ₫</td>
-                                <%-- Thanh tien = So luong * Don gia --%>
-                            <td class="text-end fw-bold"><fmt:formatNumber value="${ct.soLuong * ct.donGia}" pattern="#,##0"/> ₫</td>
                             <td class="text-center">
                                 <c:choose>
                                     <c:when test="${conLai == ct.soLuong}">
@@ -204,12 +201,29 @@
                     </c:forEach>
                     </tbody>
                     <tfoot>
+                    <c:set var="tamTinh" value="${donHang.tongTien + (empty donHang.soTienGiam ? 0 : donHang.soTienGiam)}" />
+                    <c:if test="${not empty donHang.soTienGiam && donHang.soTienGiam > 0}">
+                        <tr>
+                            <td colspan="3" class="text-end text-muted py-2">Tạm tính:</td>
+                            <td class="text-end text-muted py-2">
+                                <fmt:formatNumber value="${tamTinh}" pattern="#,##0"/> ₫
+                            </td>
+                            <td class="no-print"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end text-muted py-2">Voucher giảm giá:</td>
+                            <td class="text-end py-2" style="color:#dc2626;">
+                                - <fmt:formatNumber value="${donHang.soTienGiam}" pattern="#,##0"/> ₫
+                            </td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </c:if>
                     <tr class="table-light">
                         <td colspan="3" class="text-end fw-bold py-3">TỔNG CỘNG:</td>
                         <td class="text-end fw-bold py-3" style="font-size:18px; color:#4f46e5;">
                             <fmt:formatNumber value="${donHang.tongTien}" pattern="#,##0"/> ₫
                         </td>
-                        <td colspan="2" class="no-print"></td>
+                        <td class="no-print"></td>
                     </tr>
                     </tfoot>
                 </table>
@@ -224,23 +238,32 @@
                         <i class="bi bi-clock-history me-2" style="color:#4f46e5;"></i>Lịch sử đổi/trả
                     </h6>
                     <div class="table-responsive">
-                        <table class="table table-sm mb-0">
+                        <table class="table mb-0" style="font-size:13.5px;">
                             <thead class="table-light">
                             <tr>
-                                <th>Thời gian</th>
-                                <th>Loại</th>
-                                <th>Sách cũ</th>
-                                <th class="text-center">SL</th>
-                                <th>Sách mới</th>
-                                <th class="text-end">Chênh lệch</th>
-                                <th>Lý do</th>
+                                <th class="py-2">Thời gian</th>
+                                <th class="py-2">Loại</th>
+                                <th class="py-2">Sách cũ</th>
+                                <th class="py-2 text-center">SL</th>
+                                <th class="py-2">Sách mới</th>
+                                <th class="py-2 text-end">Voucher chia đều</th>
+                                <th class="py-2 text-end">Số tiền trả/thu</th>
+                                <th class="py-2">Lý do</th>
                             </tr>
                             </thead>
                             <tbody>
                             <c:forEach var="ls" items="${lichSuDoiTra}">
+                                <%-- Moi: so tien voucher da chia deu ap dung cho lan tra nay, suy ra
+                                     tu don gia goc va so tien thuc hoan da luu trong ChenhLechTien
+                                     (khong can them cot moi trong DB): voucherApDung = donGia*SL - soTienHoan
+                                     = donGia*SL + ChenhLechTien (vi ChenhLechTien = -soTienHoan cho TRA). --%>
+                                <c:set var="voucherApDung" value="${0}" />
+                                <c:if test="${ls.loaiGiaoDich == 'TRA'}">
+                                    <c:set var="voucherApDung" value="${(ls.chiTietCu.donGia * ls.soLuongTra) + ls.chenhLechTien}" />
+                                </c:if>
                                 <tr>
-                                    <td style="font-size:12.5px;">${ls.ngayThucHien}</td>
-                                    <td>
+                                    <td class="py-2 text-muted" style="font-size:12.5px;">${ls.ngayThucHien}</td>
+                                    <td class="py-2">
                                         <c:choose>
                                             <c:when test="${ls.loaiGiaoDich == 'DOI'}">
                                                 <span class="badge bg-primary-subtle text-primary">Đổi</span>
@@ -250,13 +273,21 @@
                                             </c:otherwise>
                                         </c:choose>
                                     </td>
-                                    <td>${ls.chiTietCu.sach.tenSach}</td>
-                                    <td class="text-center">${ls.soLuongTra}</td>
-                                    <td>${not empty ls.sachMoi ? ls.sachMoi.tenSach : '-'}</td>
-                                    <td class="text-end">
+                                    <td class="py-2">${ls.chiTietCu.sach.tenSach}</td>
+                                    <td class="py-2 text-center">${ls.soLuongTra}</td>
+                                    <td class="py-2">${not empty ls.sachMoi ? ls.sachMoi.tenSach : '-'}</td>
+                                    <td class="py-2 text-end text-muted">
+                                        <c:choose>
+                                            <c:when test="${ls.loaiGiaoDich == 'TRA' && voucherApDung > 0}">
+                                                - <fmt:formatNumber value="${voucherApDung}" pattern="#,##0"/> ₫
+                                            </c:when>
+                                            <c:otherwise>-</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="py-2 text-end fw-semibold">
                                         <fmt:formatNumber value="${ls.chenhLechTien}" pattern="#,##0"/> ₫
                                     </td>
-                                    <td style="font-size:12.5px;">${not empty ls.lyDo ? ls.lyDo : '-'}</td>
+                                    <td class="py-2 text-muted" style="font-size:12.5px;">${not empty ls.lyDo ? ls.lyDo : '-'}</td>
                                 </tr>
                             </c:forEach>
                             </tbody>
