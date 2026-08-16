@@ -32,10 +32,28 @@
             <div class="col-lg-7">
                 <div class="card bg-white border mb-3" style="border-color:#e2e8f0;border-radius:10px;">
                     <div class="card-body p-3">
-                        <div class="d-flex gap-2">
-                            <input type="text" id="searchInput" value="${tuKhoa}" class="form-control"
-                                   placeholder="Tìm mã / tên sách..." style="font-size:13.5px;max-width:320px;">
-                            <button class="btn btn-outline-secondary" onclick="searchSach()" style="font-size:13px;border-radius:6px;">Tìm</button>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <div class="input-group" style="max-width:280px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;">
+                                <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" id="searchInput" value="${tuKhoa}" class="form-control border-0"
+                                       placeholder="Tìm mã / tên sách..." style="font-size:13.5px;box-shadow:none;"
+                                       onkeydown="if(event.key==='Enter') searchSach()">
+                            </div>
+                            <select id="filterTheLoai" class="form-select" style="max-width:180px;font-size:13px;border-color:#cbd5e1;border-radius:6px;"
+                                    onchange="searchSach()">
+                                <option value="">Tất cả thể loại</option>
+                                <c:forEach var="tl" items="${dsTheLoai}">
+                                    <option value="${tl.maTL}" ${maTLSelected == tl.maTL.toString() ? 'selected' : ''}>${tl.tenTL}</option>
+                                </c:forEach>
+                            </select>
+                            <button class="btn text-white" onclick="searchSach()" style="background:#4f46e5;border-radius:6px;font-size:13px;">
+                                <i class="bi bi-funnel me-1"></i>Lọc
+                            </button>
+                            <c:if test="${not empty tuKhoa or (not empty maTLSelected and maTLSelected != '')}">
+                                <a href="${pageContext.request.contextPath}/pos" class="btn btn-link text-decoration-none" style="font-size:13px;color:#64748b;">
+                                    <i class="bi bi-x-circle me-1"></i>Xóa lọc
+                                </a>
+                            </c:if>
                         </div>
                     </div>
                 </div>
@@ -340,7 +358,7 @@
                     </div>
                     <div class="d-flex justify-content-between mb-1">
                         <span style="font-size:12px;color:#64748b;">Số tài khoản</span>
-                        <span style="font-size:12.5px;font-weight:600;color:#0f172a;">0387772459</span>
+                        <span style="font-size:12.5px;font-weight:600;color:#0f172a;">0372373672</span>
                     </div>
                     <div class="d-flex justify-content-between mb-1">
                         <span style="font-size:12px;color:#64748b;">Số tiền</span>
@@ -645,13 +663,16 @@
     /* ===== Tìm kiếm sách AJAX ===== */
     function searchSach() {
         const q = document.getElementById('searchInput').value.trim();
-        fetch(CTX + '/pos?q=' + encodeURIComponent(q), {
+        const maTL = document.getElementById('filterTheLoai').value;
+        let url = CTX + '/pos?q=' + encodeURIComponent(q);
+        if (maTL) url += '&maTL=' + encodeURIComponent(maTL);
+        fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         }).then(r => r.json()).then(data => {
             if (!data.ok) { showAlert(data.message || 'Lỗi tìm kiếm', 'error'); return; }
             const tbody = document.getElementById('sachTableBody');
             if (!data.sachs || data.sachs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Không tìm thấy sách nào.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Không tìm thấy sách nào.</td></tr>';
                 return;
             }
             let html = '';
@@ -659,16 +680,6 @@
                 const ton = s.ton || 0;
                 const hasBT = s.bienThes && s.bienThes.length > 0;
                 const selectId = 'bt_' + s.maSach;
-                let giaHtml = '';
-                if (hasBT) {
-                    giaHtml = '<select id="' + escHtml(selectId) + '" class="form-select form-select-sm" style="font-size:12.5px;">';
-                    s.bienThes.forEach(function(bt) {
-                        giaHtml += '<option value="' + bt.maBienThe + '" data-gia="' + bt.giaBienThe + '">' + escHtml(bt.tenHienThi) + '</option>';
-                    });
-                    giaHtml += '</select>';
-                } else {
-                    giaHtml = '<span style="font-size:13px;">' + Math.round(s.giaBan).toLocaleString('vi-VN') + ' ₫</span>';
-                }
                 const addCall = hasBT
                     ? 'addToCart(\'' + escHtml(s.maSach) + '\', document.getElementById(\'' + escHtml(selectId) + '\').value)'
                     : 'addToCart(\'' + escHtml(s.maSach) + '\', \'\')';
@@ -681,7 +692,16 @@
                     + '</td>'
                     + '<td class="fw-semibold">' + escHtml(s.maSach) + '</td>'
                     + '<td>' + escHtml(s.tenSach) + '</td>'
-                    + '<td style="min-width:220px;">' + giaHtml + '</td>'
+                    + '<td style="min-width:180px;">' + (hasBT
+                        ? '<select id="' + escHtml(selectId) + '" class="form-select form-select-sm" style="font-size:12.5px;" onchange="updateGia(\'' + escHtml(s.maSach) + '\', this)">'
+                          + s.bienThes.map(bt => '<option value="' + bt.maBienThe + '" data-gia="' + bt.giaBienThe + '">' + escHtml(bt.tenHienThi) + '</option>').join('')
+                          + '</select>'
+                        : '<span class="text-muted" style="font-size:13px;">—</span>') + '</td>'
+                    + '<td style="min-width:90px;">'
+                    + (hasBT
+                        ? '<span id="gia_' + escHtml(s.maSach) + '" style="font-size:13px;white-space:nowrap;">' + (s.bienThes.length > 0 ? Math.round(s.bienThes[0].giaBienThe).toLocaleString('vi-VN') + ' ₫' : '') + '</span>'
+                        : '<span style="font-size:13px;white-space:nowrap;">' + Math.round(s.giaBan).toLocaleString('vi-VN') + ' ₫</span>')
+                    + '</td>'
                     + '<td class="text-center">' + ton + '</td>'
                     + '<td class="text-end pe-3">'
                     + '<button class="btn btn-sm text-white" style="background:#4f46e5;border-radius:6px;" onclick="' + addCall + '" ' + (ton === 0 ? 'disabled' : '') + '>'
@@ -734,7 +754,7 @@
 
     /* ===== VietQR ===== */
     const VIETQR_BANK    = 'MB';
-    const VIETQR_ACCOUNT = '0387772459';
+    const VIETQR_ACCOUNT = '0372373672';
     const VIETQR_NAME    = 'NHA%20SACH'; // Tên hiển thị trên QR (encode URL)
 
     function onPhuongThucChange(sel) {

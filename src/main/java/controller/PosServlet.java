@@ -4,6 +4,7 @@ import dao.DonHangDAO;
 import dao.KhachHangDAO;
 import dao.SachBienTheDAO;
 import dao.SachDAO;
+import dao.TheLoaiDAO;
 import entity.*;
 import repository.VoucherRepo;
 import jakarta.servlet.ServletException;
@@ -26,19 +27,29 @@ public class PosServlet extends HttpServlet {
     private final KhachHangDAO khachHangDAO = new KhachHangDAO();
     private final DonHangDAO donHangDAO     = new DonHangDAO();
     private final VoucherRepo voucherRepo   = new VoucherRepo();
+    private final TheLoaiDAO theLoaiDAO     = new TheLoaiDAO();
 
     // ----------------------------------------------------------------
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String q = request.getParameter("q");
+        String q    = request.getParameter("q");
+        String maTLParam = request.getParameter("maTL");
+        Integer maTL = null;
+        try { if (maTLParam != null && !maTLParam.isBlank()) maTL = Integer.valueOf(maTLParam); }
+        catch (NumberFormatException ignored) {}
 
         // AJAX search: trả JSON danh sách sách
         if (isAjax(request) && q != null) {
-            List<Sach> danhSach = q.isBlank()
-                    ? sachDAO.getAllDangBan()
-                    : sachDAO.searchDangBan(q.trim());
+            List<Sach> danhSach;
+            if (q.isBlank()) {
+                danhSach = sachDAO.getAllDangBanByTheLoai(maTL);
+            } else {
+                danhSach = maTL == null
+                        ? sachDAO.searchDangBan(q.trim())
+                        : sachDAO.searchDangBanByTheLoai(q.trim(), maTL);
+            }
             Map<String, Long> tonKho = sachDAO.getTonKhoMap();
             HttpSession session = request.getSession();
             Map<String, CartItem> gioHang = layGioHang(session);
@@ -89,9 +100,14 @@ public class PosServlet extends HttpServlet {
         }
 
         // Normal GET: render trang lần đầu
-        List<Sach> danhSach = (q != null && !q.isBlank())
-                ? sachDAO.searchDangBan(q.trim())
-                : sachDAO.getAllDangBan();
+        List<Sach> danhSach;
+        if (q != null && !q.isBlank()) {
+            danhSach = maTL == null
+                    ? sachDAO.searchDangBan(q.trim())
+                    : sachDAO.searchDangBanByTheLoai(q.trim(), maTL);
+        } else {
+            danhSach = sachDAO.getAllDangBanByTheLoai(maTL);
+        }
         Map<String, Long> tonKho = sachDAO.getTonKhoMap();
         HttpSession session = request.getSession();
         Map<String, CartItem> gioHang = layGioHang(session);
@@ -151,6 +167,8 @@ public class PosServlet extends HttpServlet {
         request.setAttribute("tongTienPhaiTra", tongTienPhaiTra);
         request.setAttribute("appliedVoucher",  appliedVoucher != null ? appliedVoucher : "");
         request.setAttribute("tuKhoa",          q);
+        request.setAttribute("maTLSelected",    maTLParam != null ? maTLParam : "");
+        request.setAttribute("dsTheLoai",       theLoaiDAO.getAll());
         request.setAttribute("activeMenu",      "pos");
         request.getRequestDispatcher("/view/pos.jsp").forward(request, response);
     }

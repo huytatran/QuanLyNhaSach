@@ -90,6 +90,24 @@ public class SachDAO {
         }
     }
 
+    /** Loc theo the loai - dung cho POS. maTL = null -> lay tat ca. */
+    public List<Sach> getAllDangBanByTheLoai(Integer maTL) {
+        if (maTL == null) return getAllDangBan();
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            return session.createQuery(
+                    "SELECT DISTINCT s FROM Sach s "
+                            + "LEFT JOIN FETCH s.theLoai "
+                            + "LEFT JOIN FETCH s.nhaXuatBan "
+                            + "LEFT JOIN FETCH s.boSach "
+                            + "WHERE (s.trangThai IS NULL OR s.trangThai = true) "
+                            + "AND s.theLoai.maTL = :maTL "
+                            + "ORDER BY s.maSach",
+                    Sach.class)
+                    .setParameter("maTL", maTL)
+                    .getResultList();
+        }
+    }
+
     /** Ban chi lay sach dang kinh doanh cua search() - dung cho o tim kiem trong POS. */
     public List<Sach> searchDangBan(String tuKhoa) {
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -104,6 +122,27 @@ public class SachDAO {
                             + "ORDER BY s.maSach",
                     Sach.class)
                     .setParameter("q", like)
+                    .getResultList();
+        }
+    }
+
+    /** Tim kiem + loc theo the loai - dung cho POS. maTL = null -> khong loc the loai. */
+    public List<Sach> searchDangBanByTheLoai(String tuKhoa, Integer maTL) {
+        if (maTL == null) return searchDangBan(tuKhoa);
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String like = "%" + tuKhoa.toLowerCase() + "%";
+            return session.createQuery(
+                    "SELECT DISTINCT s FROM Sach s "
+                            + "LEFT JOIN FETCH s.theLoai "
+                            + "LEFT JOIN FETCH s.nhaXuatBan "
+                            + "LEFT JOIN FETCH s.boSach "
+                            + "WHERE (LOWER(s.maSach) LIKE :q OR LOWER(s.tenSach) LIKE :q) "
+                            + "AND (s.trangThai IS NULL OR s.trangThai = true) "
+                            + "AND s.theLoai.maTL = :maTL "
+                            + "ORDER BY s.maSach",
+                    Sach.class)
+                    .setParameter("q", like)
+                    .setParameter("maTL", maTL)
                     .getResultList();
         }
     }
