@@ -160,7 +160,7 @@
                     <table class="table table-custom table-borderless w-100 mb-0" id="bangVoucher">
                         <thead>
                         <tr>
-                            <th>M উল্লেখযোগ্য VOUCHER</th>
+                            <th>MÃ VOUCHER</th>
                             <th>ĐIỀU KIỆN</th>
                             <th>HIỆU LỰC</th>
                             <th>SỐ LẦN DÙNG</th>

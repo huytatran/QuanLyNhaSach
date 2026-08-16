@@ -23,7 +23,6 @@
                 <p class="text-muted mb-0 mt-1" style="font-size: 13.5px;">Hoàn tất các thủ tục dưới đây trước khi kết thúc ca trực.</p>
             </div>
 
-            <!-- THẺ HIỂN THỊ CA HIỆN TẠI ĐÃ ĐƯỢC GẮN ID ĐỂ JS XỬ LÝ -->
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2" style="font-size: 13px;">
                 <i class="bi bi-clock-history me-1"></i> <span id="textCaHienTai">Đang tải giờ...</span>
             </span>
@@ -32,7 +31,6 @@
         <div class="row g-4">
             <!-- CỘT TRÁI: CHECKLIST -->
             <div class="col-md-7">
-                <!-- Checklist -->
                 <div class="card bg-white border p-4 shadow-sm h-100" style="border-radius:12px; border-color:#e2e8f0;">
                     <h6 class="fw-bold mb-1" style="font-size: 14px;">Checklist cuối ca</h6>
                     <p class="text-muted mb-3" style="font-size: 12px;">Đánh dấu các công việc đã hoàn thành</p>
@@ -56,7 +54,7 @@
                 </div>
             </div>
 
-            <!-- CỘT PHẢI: THÔNG TIN BÀN GIAO & NÚT CHỐT -->
+            <!-- CỘT PHẢI: THÔNG TIN BÀN GIAO -->
             <div class="col-md-5">
                 <div class="card bg-white border p-4 shadow-sm h-100 d-flex flex-column" style="border-radius:12px; border-color:#e2e8f0;">
                     <h6 class="fw-bold mb-3" style="font-size: 14px;">Chi tiết bàn giao</h6>
@@ -83,7 +81,8 @@
                     </div>
 
                     <hr class="my-4">
-                    <button type="button" onclick="xuLyGiaoCa()" class="btn btn-primary w-100 fw-semibold py-2" style="border-radius: 8px; background-color: #4f46e5;">
+                    <!-- NÚT NÀY ĐÃ ĐƯỢC ĐỔI THÀNH GỌI HÀM MỞ MODAL XÁC MINH -->
+                    <button type="button" onclick="kiemTraVaMoXacMinh()" class="btn btn-primary w-100 fw-semibold py-2" style="border-radius: 8px; background-color: #4f46e5;">
                         <i class="bi bi-box-arrow-right me-2"></i> Xác nhận & Đăng xuất
                     </button>
                 </div>
@@ -92,49 +91,145 @@
     </div>
 </div>
 
+<!-- ============================================== -->
+<!-- MODAL POPUP: XÁC MINH TÀI KHOẢN NGƯỜI NHẬN CA -->
+<!-- ============================================== -->
+<div class="modal fade" id="modalXacMinh" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold" style="color: #0f172a;"><i class="bi bi-shield-lock text-primary me-2"></i>Xác minh người nhận ca</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <p class="text-muted mb-3" style="font-size: 13px;">
+                    Nhân viên <strong id="tenNguoiNhanXacMinh" class="text-primary"></strong> vui lòng đăng nhập để xác nhận bàn giao.
+                </p>
+
+                <!-- VÙNG HIỂN THỊ LỖI KHI SAI MẬT KHẨU -->
+                <div id="loiXacMinh" class="alert alert-danger py-2 px-3 mb-3" style="display: none; font-size: 12px; border-radius: 6px; padding: 8px;"></div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">Tài khoản</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light"><i class="bi bi-person text-muted"></i></span>
+                        <input type="text" id="usernameAuth" class="form-control" placeholder="Nhập tài khoản...">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">Mật khẩu</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light"><i class="bi bi-key text-muted"></i></span>
+                        <input type="password" id="passwordAuth" class="form-control" placeholder="Nhập mật khẩu...">
+                    </div>
+                </div>
+
+                <button type="button" id="btnChotCa" onclick="hoanTatGiaoCa()" class="btn btn-primary w-100 fw-semibold" style="border-radius: 6px; background-color: #4f46e5; padding: 8px 0;">
+                    <i class="bi bi-check2-circle me-1"></i> Xác minh & Chốt ca
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Hàm tự động xác định ca làm việc theo giờ hệ thống
+    // 1. TỰ ĐỘNG BẮT CA LÀM VIỆC THEO GIỜ HỆ THỐNG
     document.addEventListener('DOMContentLoaded', function() {
         const hour = new Date().getHours();
         let caText = "Ngoài giờ làm việc";
-
-        // Logic chia ca giống với trang Lịch làm việc
-        if (hour >= 7 && hour < 9) {
-            caText = "07:00 - 09:00 (Ca Sáng sớm)";
-        } else if (hour >= 9 && hour < 11) {
-            caText = "09:00 - 11:00 (Ca Sáng)";
-        } else if (hour >= 11 && hour < 19) {
-            caText = "11:00 - 19:00 (Ca Trưa - Tối)";
-        } else if (hour >= 19 && hour < 22) {
-            caText = "19:00 - 22:00 (Ca Tối)";
-        }
-
+        if (hour >= 7 && hour < 9) { caText = "07:00 - 09:00 (Ca Sáng sớm)"; }
+        else if (hour >= 9 && hour < 11) { caText = "09:00 - 11:00 (Ca Sáng)"; }
+        else if (hour >= 11 && hour < 19) { caText = "11:00 - 19:00 (Ca Trưa - Tối)"; }
+        else if (hour >= 19 && hour < 22) { caText = "19:00 - 22:00 (Ca Tối)"; }
         document.getElementById('textCaHienTai').innerText = "Ca hiện tại: " + caText;
     });
 
-    // Hàm xử lý nút chốt ca
-    function xuLyGiaoCa() {
-        const nguoiNhan = document.getElementById('nguoiNhanCa').value;
+    // 2. KIỂM TRA FORM VÀ MỞ MODAL XÁC MINH
+    function kiemTraVaMoXacMinh() {
+        const selectNguoiNhan = document.getElementById('nguoiNhanCa');
+        const nguoiNhan = selectNguoiNhan.value;
         const checkboxes = document.querySelectorAll('.form-check-input');
 
+        // Bắt lỗi chưa chọn người nhận ca
         if (!nguoiNhan) {
-            alert("Vui lòng chọn Nhân viên nhận ca tiếp theo!");
-            document.getElementById('nguoiNhanCa').focus();
+            alert("Vui lòng chọn Nhân viên nhận ca tiếp theo trước khi xác nhận!");
+            selectNguoiNhan.focus();
             return;
         }
 
+        // Cảnh báo nếu chưa check hết checklist
         let checkedCount = 0;
-        checkboxes.forEach(cb => {
-            if (cb.checked) checkedCount++;
-        });
-
+        checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
         if (checkedCount < checkboxes.length) {
             const xacNhanChecklist = confirm("Bạn chưa hoàn thành toàn bộ Checklist cuối ca. Vẫn muốn tiếp tục bàn giao?");
             if (!xacNhanChecklist) return;
         }
 
-        alert("Bàn giao ca cho " + nguoiNhan + " thành công! Hệ thống sẽ tự động đăng xuất.");
-        window.location.href = "${pageContext.request.contextPath}/dashboard?action=logout";
+        // Lấy tên nhân viên vừa chọn và điền vào Modal
+        const tenHienThi = selectNguoiNhan.options[selectNguoiNhan.selectedIndex].text;
+        document.getElementById('tenNguoiNhanXacMinh').innerText = tenHienThi;
+
+        // Reset trắng form nhập trong Modal
+        document.getElementById('usernameAuth').value = '';
+        document.getElementById('passwordAuth').value = '';
+        document.getElementById('loiXacMinh').style.display = 'none';
+
+        // Hiển thị Modal
+        var myModal = new bootstrap.Modal(document.getElementById('modalXacMinh'));
+        myModal.show();
+    }
+
+    // 3. HÀM GỬI AJAX VỀ JAVA ĐỂ KIỂM TRA MẬT KHẨU BẰNG FETCH
+    function hoanTatGiaoCa() {
+        const user = document.getElementById('usernameAuth').value.trim();
+        const pass = document.getElementById('passwordAuth').value.trim();
+        const divLoi = document.getElementById('loiXacMinh');
+
+        if (user === "" || pass === "") {
+            divLoi.innerText = "Vui lòng nhập tài khoản và mật khẩu!";
+            divLoi.style.display = 'block';
+            return;
+        }
+
+        // Đổi nút thành trạng thái đang tải
+        const btn = document.getElementById('btnChotCa');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Đang kiểm tra...';
+        btn.disabled = true;
+
+        // Gọi API (AJAX) về Servlet Dashboard (Trang chủ) để kiểm tra vì nó thường chứa logic đăng nhập
+        fetch('${pageContext.request.contextPath}/giaoca?action=xacMinh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'username': user,
+                'password': pass
+            })
+        })
+        .then(response => response.text())
+        .then(result => {
+            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Xác minh & Chốt ca';
+            btn.disabled = false;
+
+            if (result.trim() === "SUCCESS") {
+                alert("Xác minh thành công! Đã lưu nhật ký bàn giao ca.\nHệ thống sẽ tự động đăng xuất.");
+                // Chuyển về trang đăng nhập
+                window.location.href = "${pageContext.request.contextPath}/dashboard?action=logout";
+            } else {
+                divLoi.innerText = "Sai tài khoản hoặc mật khẩu! Vui lòng thử lại.";
+                divLoi.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Xác minh & Chốt ca';
+            btn.disabled = false;
+            divLoi.innerText = "Lỗi kết nối đến máy chủ! Vui lòng thử lại sau.";
+            divLoi.style.display = 'block';
+        });
     }
 </script>
 </body>

@@ -129,51 +129,70 @@
             </a>
         </li>
 
-        <c:if test="${sessionScope.currentUser.vaiTroNV == 1}">
-            <li class="nav-item mt-4 mb-2">
-                <span class="text-uppercase px-3" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Hệ thống</span>
-            </li>
+        <!-- ============================================== -->
+        <!-- MỤC HỆ THỐNG: TÁCH LÀM 2 GIAO DIỆN RIÊNG BIỆT -->
+        <!-- ============================================== -->
+        <li class="nav-item mt-4 mb-2">
+            <span class="text-uppercase px-3" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Hệ thống</span>
+        </li>
 
-            <li class="nav-item mb-1">
-                <a href="#submenuNhanVien" data-bs-toggle="collapse"
-                   class="nav-link d-flex align-items-center justify-content-between
-                          ${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'text-white' : 'text-white-50 hover-menu'}"
-                   style="${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}"
-                   aria-expanded="${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'true' : 'false'}">
-                    <span><i class="bi bi-shield-lock-fill me-2"></i> Quản lý Nhân Viên</span>
-                    <i class="bi bi-chevron-down" id="chevronNhanVien"
-                       style="font-size:11px;transition:transform 0.2s;
-                              transform:${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'rotate(180deg)' : 'rotate(0deg)'}"></i>
-                </a>
-                <div class="collapse ${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'show' : ''}" id="submenuNhanVien">
-                    <ul class="nav flex-column ps-3 mt-1" style="gap:2px;">
-                        <li class="nav-item mb-1">
-                            <a href="${pageContext.request.contextPath}/nhanvien"
-                               class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'nhanvien' ? 'text-white fw-semibold' : ''}"
-                               style="font-size:13px;border-radius:8px;">Danh sách nhân viên</a>
-                        </li>
-                        <li class="nav-item mb-1">
-                            <a href="${pageContext.request.contextPath}/giaoca"
-                               class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'giaoca' ? 'text-white fw-semibold' : ''}"
-                               style="font-size:13px;border-radius:8px;">Giao ca</a>
-                        </li>
-                        <li class="nav-item mb-1">
-                            <a href="${pageContext.request.contextPath}/lichlamviec"
-                               class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'lichlamviec' ? 'text-white fw-semibold' : ''}"
-                               style="font-size:13px;border-radius:8px;">Lịch làm việc</a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
+        <c:choose>
+            <c:when test="${sessionScope.currentUser.vaiTroNV == 1}">
+                <!-- GIAO DIỆN ADMIN: HIỆN DROPDOWN QUẢN LÝ NHÂN VIÊN VÀ BÁO CÁO -->
+                <li class="nav-item mb-1">
+                    <a href="#submenuNhanVien" data-bs-toggle="collapse"
+                       class="nav-link d-flex align-items-center justify-content-between
+                              ${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'text-white' : 'text-white-50 hover-menu'}"
+                       style="${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}"
+                       aria-expanded="${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'true' : 'false'}">
+                        <span><i class="bi bi-shield-lock-fill me-2"></i> Quản lý Nhân Viên</span>
+                        <i class="bi bi-chevron-down" id="chevronNhanVien"
+                           style="font-size:11px;transition:transform 0.2s;
+                                  transform:${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'rotate(180deg)' : 'rotate(0deg)'}"></i>
+                    </a>
+                    <div class="collapse ${activeMenu == 'nhanvien' || activeMenu == 'giaoca' || activeMenu == 'lichlamviec' ? 'show' : ''}" id="submenuNhanVien">
+                        <ul class="nav flex-column ps-3 mt-1" style="gap:2px;">
+                            <li class="nav-item mb-1">
+                                <a href="${pageContext.request.contextPath}/nhanvien"
+                                   class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'nhanvien' ? 'text-white fw-semibold' : ''}"
+                                   style="font-size:13px;border-radius:8px;">Danh sách nhân viên</a>
+                            </li>
+                            <li class="nav-item mb-1">
+                                <a href="${pageContext.request.contextPath}/giaoca"
+                                   class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'giaoca' ? 'text-white fw-semibold' : ''}"
+                                   style="font-size:13px;border-radius:8px;">Giao ca</a>
+                            </li>
+                            <li class="nav-item mb-1">
+                                <a href="${pageContext.request.contextPath}/lichlamviec"
+                                   class="nav-link text-white-50 hover-menu py-1 ${activeMenu == 'lichlamviec' ? 'text-white fw-semibold' : ''}"
+                                   style="font-size:13px;border-radius:8px;">Lịch làm việc</a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
 
-            <li class="nav-item mb-1">
-                <a href="${pageContext.request.contextPath}/baocao"
-                   class="nav-link d-flex align-items-center ${activeMenu == 'baocao' ? 'text-white' : 'text-white-50 hover-menu'}"
-                   style="${activeMenu == 'baocao' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
-                    <i class="bi bi-bar-chart-line-fill me-2"></i> Báo cáo doanh thu
-                </a>
-            </li>
-        </c:if>
+                <!-- CHỈ ADMIN MỚI THẤY BÁO CÁO DOANH THU -->
+                <li class="nav-item mb-1">
+                    <a href="${pageContext.request.contextPath}/baocao"
+                       class="nav-link d-flex align-items-center ${activeMenu == 'baocao' ? 'text-white' : 'text-white-50 hover-menu'}"
+                       style="${activeMenu == 'baocao' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
+                        <i class="bi bi-bar-chart-line-fill me-2"></i> Báo cáo doanh thu
+                    </a>
+                </li>
+            </c:when>
+
+            <c:otherwise>
+                <!-- GIAO DIỆN NHÂN VIÊN: CHỈ HIỆN TRỰC TIẾP NÚT GIAO CA BÊN DƯỚI HỆ THỐNG -->
+                <li class="nav-item mb-1">
+                    <a href="${pageContext.request.contextPath}/giaoca"
+                       class="nav-link d-flex align-items-center ${activeMenu == 'giaoca' ? 'text-white' : 'text-white-50 hover-menu'}"
+                       style="${activeMenu == 'giaoca' ? 'background-color: #4f46e5; border-radius: 8px;' : 'border-radius: 8px;'}">
+                        <i class="bi bi-arrow-left-right me-2"></i> Giao ca
+                    </a>
+                </li>
+            </c:otherwise>
+        </c:choose>
+
     </ul>
 
     <hr style="border-color: #334155;">
