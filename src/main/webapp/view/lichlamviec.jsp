@@ -12,7 +12,12 @@
         .ca-desc { font-size: 11px; color: #64748b; font-weight: normal; display: block; margin-top: 4px; }
         .badge-nv { font-size: 11.5px; font-weight: 500; padding: 6px 10px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); width: 100%; text-align: center; transition: all 0.2s; }
         .date-sub { display: block; font-size: 11px; font-weight: 400; color: #94a3b8; margin-top: 2px; }
+
+        /* Hiệu ứng làm mờ khi bị lọc nhân viên */
+        .dimmed { opacity: 0.15; filter: grayscale(100%); }
     </style>
+    <!-- Thư viện SheetJS dùng để xuất file Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <jsp:include page="common/sidebar.jsp" />
@@ -20,7 +25,7 @@
 
 <div style="margin-left: 280px; margin-top: 60px;" class="p-4">
     <div class="container-fluid">
-        <!-- HEADER -->
+        <!-- HEADER VÀ CÁC NÚT CÔNG CỤ -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h4 class="fw-bold mb-0" style="color:#0f172a;">
@@ -28,20 +33,60 @@
                 </h4>
                 <p id="week-title" class="text-muted mb-0 mt-1" style="font-size: 13px;">Tuần từ 10/08/2026 đến 16/08/2026</p>
             </div>
-            <div class="d-flex gap-2">
-                <button onclick="changeWeek(-1)" class="btn btn-outline-secondary btn-sm fw-semibold" style="border-radius: 8px; padding: 8px 16px;">
+            <div class="d-flex gap-2 align-items-center">
+
+                <!-- NÚT BỘ LỌC ĐÃ ĐƯỢC GỘP GỌN GÀNG -->
+                <div class="dropdown">
+                    <button class="btn btn-sm fw-semibold text-white dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="background-color: #0d6efd; border: none; border-radius: 6px; padding: 6px 14px;">
+                        <i class="bi bi-funnel"></i> Bộ lọc
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-3 shadow" style="width: 280px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 8px;">
+                        <h6 class="dropdown-header px-0 text-dark fw-bold mb-2" style="font-size: 13px;">Công cụ tìm kiếm & lọc</h6>
+
+                        <!-- ĐÃ ĐỔI TỪ Ô NHẬP CHỮ SANG Ô CHỌN CÓ SẴN (SELECT) -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted mb-1" style="font-size: 12px;">Chọn nhân viên (Làm mờ ca khác)</label>
+                            <select id="searchNV" class="form-select form-select-sm">
+                                <option value="">-- Tất cả nhân viên --</option>
+                                <option value="Nguyễn Văn Admin">Nguyễn Văn Admin</option>
+                                <option value="Trần Thị Admin">Trần Thị Admin</option>
+                                <option value="Nguyễn Văn An">Nguyễn Văn An</option>
+                                <option value="Trần Thị Bình">Trần Thị Bình</option>
+                                <option value="Lê Văn Cường">Lê Văn Cường</option>
+                                <option value="Phạm Thị Dung">Phạm Thị Dung</option>
+                                <option value="Hoàng Văn Đức">Hoàng Văn Đức</option>
+                                <option value="Vũ Thị Hạnh">Vũ Thị Hạnh</option>
+                                <option value="Đặng Văn Hùng">Đặng Văn Hùng</option>
+                                <option value="Nguyễn Thu Hà">Nguyễn Thu Hà</option>
+                                <option value="Lý Văn Long">Lý Văn Long</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted mb-1" style="font-size: 12px;">Chuyển nhanh đến ngày</label>
+                            <input type="date" id="locNgay" class="form-control form-control-sm">
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button type="button" class="btn btn-sm btn-light" onclick="xoaLocLich()" style="border-radius: 6px;">Xóa lọc</button>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="apDungLocLich(event)" style="background-color: #4f46e5; border: none; border-radius: 6px;">Áp dụng</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="changeWeek(-1)" class="btn btn-outline-secondary btn-sm fw-semibold ms-1" style="border-radius: 8px; padding: 6px 12px;">
                     <i class="bi bi-chevron-left"></i> Tuần trước
                 </button>
-                <button onclick="changeWeek(1)" class="btn btn-outline-secondary btn-sm fw-semibold" style="border-radius: 8px; padding: 8px 16px;">
+                <button onclick="changeWeek(1)" class="btn btn-outline-secondary btn-sm fw-semibold" style="border-radius: 8px; padding: 6px 12px;">
                     Tuần sau <i class="bi bi-chevron-right"></i>
                 </button>
 
-                <button data-bs-toggle="modal" data-bs-target="#modalSwap" class="btn btn-success btn-sm fw-semibold ms-2 shadow-sm" style="border-radius: 8px; padding: 8px 16px;">
-                    <i class="bi bi-arrow-left-right me-1"></i> Đổi ca nhân viên
+                <button data-bs-toggle="modal" data-bs-target="#modalSwap" class="btn btn-success btn-sm fw-semibold ms-2 shadow-sm" style="border-radius: 8px; padding: 6px 12px;">
+                    <i class="bi bi-arrow-left-right me-1"></i> Đổi ca
                 </button>
 
-                <button onclick="window.print()" class="btn btn-primary btn-sm fw-semibold ms-1 shadow-sm" style="background-color: #4f46e5; border: none; border-radius: 8px; padding: 8px 16px;">
-                    <i class="bi bi-printer me-1"></i> Xuất / In
+                <button onclick="xuatExcelLich()" class="btn btn-primary btn-sm fw-semibold ms-1 shadow-sm" style="background-color: #10b981; border: none; border-radius: 8px; padding: 6px 12px;">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
                 </button>
             </div>
         </div>
@@ -326,7 +371,6 @@
                     </div>
                 </div>
 
-                <!-- THÊM Ô NHẬP LÝ DO ĐỔI CA -->
                 <div>
                     <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">Lý do đổi ca (Bắt buộc)</label>
                     <textarea id="swapReason" class="form-control" rows="2" placeholder="Ví dụ: Đổi ca do đi khám bệnh..."></textarea>
@@ -343,10 +387,11 @@
     </div>
 </div>
 
-<!-- SCRIPT XỬ LÝ CHỨC NĂNG -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     let currentWeekOffset = 0;
-    const baseDate = new Date(2026, 7, 10);
+    const baseDate = new Date(2026, 7, 10); // 10/08/2026 là Thứ 2
 
     function formatShortDate(date) {
         let d = date.getDate();
@@ -361,21 +406,8 @@
         return (d < 10 ? '0' + d : d) + '/' + (m < 10 ? '0' + m : m) + '/' + y;
     }
 
-    function changeWeek(direction) {
-        if (direction === 1) {
-            if (currentWeekOffset >= 4) {
-                alert('Tính năng này chỉ cho phép xem trước lịch làm việc tối đa 4 tuần (1 tháng)!');
-                return;
-            }
-            currentWeekOffset++;
-        } else {
-            if (currentWeekOffset <= -4) {
-                alert('Chỉ có thể truy xuất lịch sử làm việc tối đa 4 tuần trước!');
-                return;
-            }
-            currentWeekOffset--;
-        }
-
+    // Hàm render lịch
+    function renderWeek() {
         let targetMonday = new Date(baseDate);
         targetMonday.setDate(targetMonday.getDate() + (currentWeekOffset * 7));
 
@@ -389,6 +421,98 @@
             colDate.setDate(colDate.getDate() + (i - 1));
             document.getElementById('date-col-' + i).innerText = formatShortDate(colDate);
         }
+    }
+
+    // Xử lý nút bấm Tuần trước / sau
+    function changeWeek(direction) {
+        if (direction === 1) {
+            if (currentWeekOffset >= 4) {
+                alert('Tính năng này chỉ cho phép xem trước lịch làm việc tối đa 4 tuần tới!');
+                return;
+            }
+            currentWeekOffset++;
+        } else {
+            if (currentWeekOffset <= -4) {
+                alert('Chỉ có thể truy xuất lịch sử làm việc tối đa 4 tuần trước!');
+                return;
+            }
+            currentWeekOffset--;
+        }
+        renderWeek();
+    }
+
+    // --- SCRIPT BỘ LỌC ĐÃ ĐƯỢC GỘP LẠI VÀO NÚT "ÁP DỤNG" ---
+    function apDungLocLich(event) {
+        if (event) event.preventDefault();
+
+        // 1. XỬ LÝ LỌC NHẢY CÓC THEO NGÀY
+        const inputDateVal = document.getElementById('locNgay').value;
+        if (inputDateVal) {
+            const selectedDate = new Date(inputDateVal);
+            const diffTime = selectedDate.getTime() - baseDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            let targetWeekOffset = Math.floor(diffDays / 7);
+
+            if (targetWeekOffset < -4 || targetWeekOffset > 4) {
+                alert("Vượt quá giới hạn!\nBạn chỉ có thể xem lịch trong phạm vi 4 tuần trước và sau tuần hiện tại.");
+                document.getElementById('locNgay').value = "";
+            } else {
+                currentWeekOffset = targetWeekOffset;
+                renderWeek();
+            }
+        }
+
+        // 2. TÌM KIẾM NHÂN VIÊN (TỪ DROP DOWN) VÀ HIỆU ỨNG LÀM MỜ
+        const keyword = document.getElementById('searchNV').value.toLowerCase().trim();
+        const badges = document.querySelectorAll('.badge-nv');
+
+        badges.forEach(badge => {
+            const tenNhanVien = badge.innerText.toLowerCase();
+            if (keyword === "") {
+                badge.classList.remove('dimmed');
+            } else {
+                if (tenNhanVien.includes(keyword)) {
+                    badge.classList.remove('dimmed');
+                } else {
+                    badge.classList.add('dimmed');
+                }
+            }
+        });
+
+        // 3. Tự động đóng dropdown sau khi bấm Áp dụng
+        if (event) {
+            const dropdownEl = document.querySelector('.dropdown-toggle');
+            const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownEl);
+            if (dropdownInstance) dropdownInstance.hide();
+        }
+    }
+
+    function xoaLocLich() {
+        // Xóa dữ liệu các ô nhập
+        document.getElementById('searchNV').value = '';
+        document.getElementById('locNgay').value = '';
+
+        // Xóa hiệu ứng làm mờ
+        const badges = document.querySelectorAll('.badge-nv');
+        badges.forEach(badge => badge.classList.remove('dimmed'));
+    }
+
+    // XUẤT EXCEL BẢNG LỊCH TRỰC
+    function xuatExcelLich() {
+        var bangDuLieu = document.getElementById('lichTable');
+        var bangClone = bangDuLieu.cloneNode(true);
+
+        var cells = bangClone.getElementsByTagName('td');
+        for(let i = 0; i < cells.length; i++) {
+            let text = cells[i].innerText.replace(/\n+/g, ', ').trim();
+            if(text.endsWith(', ')) text = text.slice(0, -2);
+            cells[i].innerText = text;
+        }
+
+        var wb = XLSX.utils.table_to_book(bangClone, {sheet: "LichLamViec"});
+        var ngayHomNay = new Date();
+        var tenFile = "LichLamViec_TuanNay_" + ngayHomNay.getDate() + "_" + (ngayHomNay.getMonth()+1) + ".xlsx";
+        XLSX.writeFile(wb, tenFile);
     }
 
     // HÀM XỬ LÝ ĐỔI CA
@@ -440,7 +564,6 @@
             node2.style.backgroundColor = tempBg;
             node2.style.color = tempColor;
 
-            // ĐÃ SỬA CÚ PHÁP LƯU NHẬT KÝ ĐỂ KHÔNG BỊ JSP BẮT LỖI
             const logContainer = document.getElementById('nhatKyGhiChu');
             const emptyLog = document.getElementById('emptyLog');
             if (emptyLog) emptyLog.style.display = 'none';
@@ -468,11 +591,12 @@
             const modalEl = document.getElementById('modalSwap');
             const modalInstance = bootstrap.Modal.getInstance(modalEl);
             modalInstance.hide();
+
+            xoaLocLich();
         } else {
             alert("Đổi ca thất bại!\nMột trong hai (hoặc cả hai) nhân viên này không có ca trực trong ngày bạn đã chọn.");
         }
     }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

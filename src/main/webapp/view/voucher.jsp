@@ -24,6 +24,8 @@
         .badge-warning { background-color: #fef9c3; color: #854d0e; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;}
         .badge-expired { background-color: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;}
     </style>
+    <!-- Thư viện SheetJS dùng để xuất file Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -32,12 +34,13 @@
 
 <div class="content-wrapper">
     <div class="mb-4">
-
+        <span class="text-uppercase" style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">NV4 - Tích hợp POS</span>
         <h3 class="fw-bold mt-1" style="color: #0f172a;"><i class="bi bi-ticket-perforated-fill me-2" style="color: #4f46e5;"></i> Voucher giảm giá</h3>
         <p class="text-muted mb-0" style="font-size: 14px;">Tạo mã giảm giá, điều kiện áp dụng và tính SoTienGiam ngay trên màn hình POS.</p>
     </div>
 
     <div class="row g-4">
+        <!-- FORM TẠO VOUCHER -->
         <div class="col-lg-4">
             <div class="card-custom p-4">
                 <h6 class="fw-bold mb-4" style="color: #0f172a;">Tạo voucher</h6>
@@ -86,67 +89,133 @@
             </div>
         </div>
 
+        <!-- DANH SÁCH VOUCHER & BỘ LỌC -->
         <div class="col-lg-8">
-            <div class="card-custom p-4 h-100">
-                <table class="table table-custom table-borderless w-100 mb-0">
-                    <thead>
-                    <tr>
-                        <th>MÃ VOUCHER</th>
-                        <th>ĐIỀU KIỆN</th>
-                        <th>HIỆU LỰC</th>
-                        <th>SỐ LẦN DÙNG</th>
-                        <th>TRẠNG THÁI</th>
-                        <th class="text-center">THAO TÁC</th> <!-- Thêm cột Thao tác -->
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <%
-                        List<Voucher> list = (List<Voucher>) request.getAttribute("listVoucher");
-                        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM");
-                        LocalDateTime now = LocalDateTime.now();
-                        if (list != null && !list.isEmpty()) {
-                            for (Voucher v : list) {
-                                String giaTri = v.getGiaTri().stripTrailingZeros().toPlainString();
-                                String donToiThieu = v.getGiaTriDonToiThieu().stripTrailingZeros().toPlainString();
-                                String dieuKien = v.getLoaiGiam() == 1 ? "Giảm " + giaTri + "%, đơn từ " + donToiThieu + " đ" : "Giảm " + giaTri + " đ, đơn từ " + donToiThieu + " đ";
+            <div class="card-custom p-4 h-100 d-flex flex-column">
 
-                                String badgeClass = "badge-active";
-                                String trangThai = "Đang chạy";
-                                if (v.getDaSuDung() >= v.getSoLuongToiDa()) { badgeClass = "badge-expired"; trangThai = "Hết lượt"; }
-                                else if (now.isAfter(v.getNgayKetThuc())) { badgeClass = "badge-expired"; trangThai = "Đã kết thúc"; }
-                                else if (now.isBefore(v.getNgayBatDau())) { badgeClass = "badge-warning"; trangThai = "Sắp diễn ra"; }
-                    %>
-                    <tr>
-                        <td class="fw-bold" style="color: #0f172a;"><%= v.getMaCode() %></td>
-                        <td><%= dieuKien %></td>
-                        <td><%= v.getNgayBatDau().format(dtf) %> - <%= v.getNgayKetThuc().format(dtf) %></td>
-                        <td style="color: #64748b;"><%= v.getDaSuDung() %>/<%= v.getSoLuongToiDa() %></td>
-                        <td><span class="<%= badgeClass %>"><%= trangThai %></span></td>
-                        <!-- Cột chứa nút thùng rác -->
-                        <td class="text-center">
-                            <a href="${pageContext.request.contextPath}/voucher/het-han?ma=<%= v.getMaVoucher() %>"
-                               class="text-danger"
-                               title="Chuyển thành hết hạn"
-                               onclick="return confirm('Bạn có chắc muốn kết thúc sớm voucher này không?');">
-                                <i class="bi bi-trash fs-5"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    <% }} else { %>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Chưa có voucher nào.</td>
-                    </tr>
-                    <% } %>
-                    </tbody>
-                </table>
+                <!-- THANH CÔNG CỤ: TÌM KIẾM, LỌC (Gửi về Server) & XUẤT EXCEL -->
+                <form action="${pageContext.request.contextPath}/voucher/hien-thi" method="GET" class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom w-100">
 
-                <!-- Thanh phân trang Bootstrap -->
-                <nav aria-label="Page navigation" class="mt-4">
-                    <ul class="pagination justify-content-center">
+                    <!-- Ô Tìm kiếm nhanh -->
+                    <div class="input-group input-group-sm" style="width: 250px;">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <!-- Thêm name="searchCode" và value để giữ text -->
+                        <input type="text" name="searchCode" class="form-control border-start-0 ps-0" placeholder="Tìm mã voucher..." value="${param.searchCode}">
+                    </div>
+
+                    <!-- Nhóm nút bên phải -->
+                    <div class="d-flex gap-2">
+
+                        <!-- Nút Bộ lọc Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-sm fw-semibold text-white dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="background-color: #0d6efd; border: none; border-radius: 6px;">
+                                <i class="bi bi-funnel"></i> Bộ lọc
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end p-3 shadow" style="width: 260px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 8px;">
+                                <h6 class="dropdown-header px-0 text-dark fw-bold mb-2" style="font-size: 13px;">Lọc Voucher</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-muted mb-1" style="font-size: 12px;">Mã voucher</label>
+                                    <select name="filterCodeDropdown" class="form-select form-select-sm">
+                                        <option value="">Tất cả mã</option>
+                                        <!-- Dùng listAllVoucher từ Java gửi sang để show full mã -->
+                                        <c:forEach var="vItem" items="${listAllVoucher}">
+                                            <option value="${vItem.maCode}" ${param.filterCodeDropdown == vItem.maCode ? 'selected' : ''}>${vItem.maCode}</option>
+                                        </c:forEach>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-muted mb-1" style="font-size: 12px;">Trạng thái</label>
+                                    <select name="filterStatus" class="form-select form-select-sm">
+                                        <option value="">Tất cả trạng thái</option>
+                                        <option value="Đang chạy" ${param.filterStatus == 'Đang chạy' ? 'selected' : ''}>Đang chạy</option>
+                                        <option value="Sắp diễn ra" ${param.filterStatus == 'Sắp diễn ra' ? 'selected' : ''}>Sắp diễn ra</option>
+                                        <option value="Đã kết thúc" ${param.filterStatus == 'Đã kết thúc' ? 'selected' : ''}>Đã kết thúc (Bao gồm Hết lượt)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label text-muted mb-1" style="font-size: 12px;">Ngày hiệu lực</label>
+                                    <input type="date" name="filterDate" class="form-control form-control-sm" value="${param.filterDate}">
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2 mt-2">
+                                    <!-- Nút Xóa lọc trỏ thẳng về link trống -->
+                                    <a href="${pageContext.request.contextPath}/voucher/hien-thi" class="btn btn-sm btn-light" style="border-radius: 6px;">Xóa lọc</a>
+                                    <!-- Nút Áp dụng gọi Submit Form -->
+                                    <button type="submit" class="btn btn-sm btn-primary" style="background-color: #4f46e5; border: none; border-radius: 6px;">Áp dụng</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nút Xuất Excel -->
+                        <button type="button" onclick="xuatExcel()" class="btn btn-sm fw-semibold text-white shadow-sm" style="background-color: #10b981; border: none; border-radius: 6px;">
+                            <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+                        </button>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-custom table-borderless w-100 mb-0" id="bangVoucher">
+                        <thead>
+                        <tr>
+                            <th>M উল্লেখযোগ্য VOUCHER</th>
+                            <th>ĐIỀU KIỆN</th>
+                            <th>HIỆU LỰC</th>
+                            <th>SỐ LẦN DÙNG</th>
+                            <th>TRẠNG THÁI</th>
+                            <th class="text-center no-export">THAO TÁC</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <%
+                            List<Voucher> list = (List<Voucher>) request.getAttribute("listVoucher");
+                            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM");
+                            LocalDateTime now = LocalDateTime.now();
+                            if (list != null && !list.isEmpty()) {
+                                for (Voucher v : list) {
+                                    String giaTri = v.getGiaTri().stripTrailingZeros().toPlainString();
+                                    String donToiThieu = v.getGiaTriDonToiThieu().stripTrailingZeros().toPlainString();
+                                    String dieuKien = v.getLoaiGiam() == 1 ? "Giảm " + giaTri + "%, đơn từ " + donToiThieu + " đ" : "Giảm " + giaTri + " đ, đơn từ " + donToiThieu + " đ";
+
+                                    String badgeClass = "badge-active";
+                                    String trangThai = "Đang chạy";
+                                    if (v.getDaSuDung() >= v.getSoLuongToiDa()) { badgeClass = "badge-expired"; trangThai = "Hết lượt"; }
+                                    else if (now.isAfter(v.getNgayKetThuc())) { badgeClass = "badge-expired"; trangThai = "Đã kết thúc"; }
+                                    else if (now.isBefore(v.getNgayBatDau())) { badgeClass = "badge-warning"; trangThai = "Sắp diễn ra"; }
+                        %>
+                        <tr class="voucher-row">
+                            <td class="fw-bold voucher-code" style="color: #0f172a;"><%= v.getMaCode() %></td>
+                            <td><%= dieuKien %></td>
+                            <td class="voucher-date"><%= v.getNgayBatDau().format(dtf) %> - <%= v.getNgayKetThuc().format(dtf) %></td>
+                            <td style="color: #64748b;"><%= v.getDaSuDung() %>/<%= v.getSoLuongToiDa() %></td>
+                            <td><span class="<%= badgeClass %> voucher-status"><%= trangThai %></span></td>
+                            <td class="text-center no-export">
+                                <a href="${pageContext.request.contextPath}/voucher/het-han?ma=<%= v.getMaVoucher() %>"
+                                   class="text-danger"
+                                   title="Chuyển thành hết hạn"
+                                   onclick="return confirm('Bạn có chắc muốn kết thúc sớm voucher này không?');">
+                                    <i class="bi bi-trash fs-5"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <% }} else { %>
+                        <tr id="noDataRow">
+                            <td colspan="6" class="text-center text-muted py-4">Chưa có voucher nào.</td>
+                        </tr>
+                        <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Thanh phân trang (Đã Update để giữ nguyên bộ lọc khi sang trang) -->
+                <nav aria-label="Page navigation" class="mt-auto pt-3">
+                    <ul class="pagination justify-content-center mb-0">
                         <c:if test="${totalPages > 0}">
                             <c:forEach begin="1" end="${totalPages}" var="i">
                                 <li class="page-item ${currentPage == i ? 'active' : ''}">
-                                    <a class="page-link" href="${pageContext.request.contextPath}/voucher/hien-thi?page=${i}">${i}</a>
+                                    <a class="page-link" href="${pageContext.request.contextPath}/voucher/hien-thi?page=${i}&searchCode=${param.searchCode}&filterCodeDropdown=${param.filterCodeDropdown}&filterStatus=${param.filterStatus}&filterDate=${param.filterDate}">${i}</a>
                                 </li>
                             </c:forEach>
                         </c:if>
@@ -158,37 +227,50 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
+    // 1. Script Khóa/Mở Giảm Tối Đa
     document.addEventListener('DOMContentLoaded', function() {
         const kieuGiam = document.getElementById('kieuGiam');
         const giamToiDa = document.getElementById('giamToiDa');
 
         function xuLyHienThiGiamToiDa() {
-            // Giá trị 1 là Giảm theo phần trăm, 2 là Giảm tiền mặt
-            if (kieuGiam.value === '1') {
-                // Giảm theo % -> CHỈ có Giá trị giảm (KHÓA Giảm tối đa)
+            if (kieuGiam.value === '2') { // Giảm tiền mặt
                 giamToiDa.disabled = true;
                 giamToiDa.value = '';
                 giamToiDa.style.backgroundColor = '#f1f5f9';
                 giamToiDa.placeholder = 'Không áp dụng';
-                giamToiDa.removeAttribute('required'); // Xóa thuộc tính bắt buộc nhập
+                giamToiDa.removeAttribute('required');
             }
-            else if (kieuGiam.value === '2') {
-                // Giảm tiền mặt -> MỞ khóa Giảm tối đa
+            else if (kieuGiam.value === '1') { // Giảm phần trăm
                 giamToiDa.disabled = false;
                 giamToiDa.style.backgroundColor = '#ffffff';
                 giamToiDa.placeholder = '';
-                giamToiDa.setAttribute('required', 'required'); // Đặt lại thuộc tính bắt buộc nhập
+                giamToiDa.setAttribute('required', 'required');
             }
         }
-
         if (kieuGiam && giamToiDa) {
-            // Khởi chạy lúc mới load trang
             xuLyHienThiGiamToiDa();
-            // Thay đổi giao diện ngay lập tức khi người dùng click đổi option
             kieuGiam.addEventListener('change', xuLyHienThiGiamToiDa);
         }
     });
+
+    // 2. Script Xuất file Excel
+    function xuatExcel() {
+        var bangDuLieu = document.getElementById('bangVoucher');
+        var bangClone = bangDuLieu.cloneNode(true);
+
+        var rows = bangClone.rows;
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].deleteCell(-1);
+        }
+
+        var wb = XLSX.utils.table_to_book(bangClone, {sheet: "DanhSachVoucher"});
+        var ngayHomNay = new Date();
+        var tenFile = "DanhSachVoucher_" + ngayHomNay.getDate() + "_" + (ngayHomNay.getMonth()+1) + ".xlsx";
+        XLSX.writeFile(wb, tenFile);
+    }
 </script>
 </body>
 </html>
