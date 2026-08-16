@@ -327,7 +327,8 @@ public class PosServlet extends HttpServlet {
                         nv.getMaNV(),
                         (pttt == null || pttt.isBlank()) ? "Tiền mặt" : pttt,
                         new ArrayList<>(gioHang.values()),
-                        soTienGiam);
+                        soTienGiam,
+                        appliedCode); // Moi: truyen ma voucher de DAO luu DonHang.MaVoucher
                 gioHang.clear();
                 session.removeAttribute("appliedVoucher");
                 session.removeAttribute("manualVoucher");
