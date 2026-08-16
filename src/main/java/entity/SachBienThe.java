@@ -52,10 +52,7 @@ public class SachBienThe {
             if (sb.length() > 0) sb.append(" – ");
             sb.append(ngonNgu);
         }
-        if (giaBienThe != null) {
-            if (sb.length() > 0) sb.append(" | ");
-            sb.append(String.format("%,.0f ₫", giaBienThe));
-        }
+
         return sb.toString();
     }
 }

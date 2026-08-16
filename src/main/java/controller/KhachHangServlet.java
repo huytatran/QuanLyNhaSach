@@ -8,8 +8,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +69,15 @@ public class KhachHangServlet extends HttpServlet {
             return;
         }
 
-        hienDanhSach(request, response, request.getParameter("q"));
+        if ("xuatExcel".equals(action)) {
+            xuLyXuatExcel(request, response);
+            return;
+        }
+
+        hienDanhSach(request, response, request.getParameter("q"), request.getParameter("trangThai"));
+    }
+
+    private void hienDanhSach(HttpServletRequest request, HttpServletResponse response, Object o) {
     }
 
     @Override
@@ -100,29 +112,44 @@ public class KhachHangServlet extends HttpServlet {
     }
 
     // ================================================================
-    private void hienDanhSach(HttpServletRequest request, HttpServletResponse response, String q)
+    private void hienDanhSach(HttpServletRequest request, HttpServletResponse response,
+                              String q, String trangThaiParam)
             throws ServletException, IOException {
 
         int trang = parseTrang(request.getParameter("page"));
         boolean coTimKiem = (q != null && !q.isBlank());
 
-        long tongSo = coTimKiem ? khachHangDAO.countSearch(q.trim()) : khachHangDAO.countAll();
-        int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
-        if (trang > tongSoTrang) trang = tongSoTrang;
+        Boolean trangThaiLoc = null;
+        if ("1".equals(trangThaiParam)) trangThaiLoc = Boolean.TRUE;
+        else if ("0".equals(trangThaiParam)) trangThaiLoc = Boolean.FALSE;
 
-        List<KhachHang> list = coTimKiem
-                ? khachHangDAO.search(q.trim(), trang, SO_DONG_MOI_TRANG)
-                : khachHangDAO.getAll(trang, SO_DONG_MOI_TRANG);
+        long tongSo;
+        List<KhachHang> list;
+
+        if (coTimKiem) {
+            tongSo = khachHangDAO.countSearchByTrangThai(q.trim(), trangThaiLoc);
+            int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
+            if (trang > tongSoTrang) trang = tongSoTrang;
+            list = khachHangDAO.searchByTrangThai(q.trim(), trangThaiLoc, trang, SO_DONG_MOI_TRANG);
+        } else {
+            tongSo = khachHangDAO.countAllByTrangThai(trangThaiLoc);
+            int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
+            if (trang > tongSoTrang) trang = tongSoTrang;
+            list = khachHangDAO.getAllByTrangThai(trangThaiLoc, trang, SO_DONG_MOI_TRANG);
+        }
+
+        int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
 
         Map<Integer, String> diaChiMacDinhMap = khachHangDAO.getDiaChiMacDinhMap();
 
-        request.setAttribute("danhSachKH", list);
+        request.setAttribute("danhSachKH",       list);
         request.setAttribute("diaChiMacDinhMap", diaChiMacDinhMap);
-        request.setAttribute("tuKhoa", q);
-        request.setAttribute("trangHienTai", trang);
-        request.setAttribute("tongSoTrang", tongSoTrang);
-        request.setAttribute("tongSoKhach", tongSo);
-        request.setAttribute("activeMenu", "khachhang");
+        request.setAttribute("tuKhoa",           q);
+        request.setAttribute("trangThaiLoc",     trangThaiParam != null ? trangThaiParam : "");
+        request.setAttribute("trangHienTai",     trang);
+        request.setAttribute("tongSoTrang",      tongSoTrang);
+        request.setAttribute("tongSoKhach",      tongSo);
+        request.setAttribute("activeMenu",       "khachhang");
         request.getRequestDispatcher("/view/khachhang.jsp").forward(request, response);
     }
 
@@ -201,6 +228,7 @@ public class KhachHangServlet extends HttpServlet {
         Integer ma = parseInt(request.getParameter("ma"));
         String trang = request.getParameter("page");
         String q = request.getParameter("q");
+        String trangThai = request.getParameter("trangThai");
         try {
             khachHangDAO.doiTrangThai(ma);
         } catch (Exception ignored) {
@@ -208,7 +236,8 @@ public class KhachHangServlet extends HttpServlet {
         }
         String redirect = request.getContextPath() + "/khachhang?"
                 + (trang != null ? "page=" + trang : "page=1")
-                + (q != null && !q.isBlank() ? "&q=" + java.net.URLEncoder.encode(q, "UTF-8") : "");
+                + (q != null && !q.isBlank() ? "&q=" + java.net.URLEncoder.encode(q, "UTF-8") : "")
+                + (trangThai != null && !trangThai.isBlank() ? "&trangThai=" + trangThai : "");
         response.sendRedirect(redirect);
     }
 
@@ -247,6 +276,162 @@ public class KhachHangServlet extends HttpServlet {
     private void chuyenVeFormSua(HttpServletRequest request, HttpServletResponse response, Integer maKH, String loi) throws IOException {
         response.sendRedirect(request.getContextPath() + "/khachhang?action=edit&ma=" + maKH + "&loiDiaChi=" +
                 java.net.URLEncoder.encode(loi, "UTF-8"));
+    }
+
+    // ================================================================
+    // Xuat Excel
+    // ================================================================
+    private void xuLyXuatExcel(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+
+        String tuKhoa = request.getParameter("q");
+        String trangThaiParam = request.getParameter("trangThai");
+
+        Boolean trangThaiLoc = null;
+        if ("1".equals(trangThaiParam)) trangThaiLoc = Boolean.TRUE;
+        else if ("0".equals(trangThaiParam)) trangThaiLoc = Boolean.FALSE;
+
+        List<KhachHang> danhSach = khachHangDAO.getAllForExport(
+                tuKhoa != null && !tuKhoa.isBlank() ? tuKhoa.trim() : null, trangThaiLoc);
+
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            Sheet sheet = wb.createSheet("Danh sach khach hang");
+            sheet.setDefaultColumnWidth(20);
+
+            // --- Style: tiêu đề chính ---
+            CellStyle styleTieuDe = wb.createCellStyle();
+            Font fontTieuDe = wb.createFont();
+            fontTieuDe.setBold(true);
+            fontTieuDe.setFontHeightInPoints((short) 14);
+            styleTieuDe.setFont(fontTieuDe);
+            styleTieuDe.setAlignment(HorizontalAlignment.CENTER);
+            styleTieuDe.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            // --- Style: header cột ---
+            CellStyle styleHeader = wb.createCellStyle();
+            Font fontHeaderWhite = wb.createFont();
+            fontHeaderWhite.setBold(true);
+            fontHeaderWhite.setColor(IndexedColors.WHITE.getIndex());
+            fontHeaderWhite.setFontHeightInPoints((short) 11);
+            styleHeader.setFont(fontHeaderWhite);
+            styleHeader.setFillForegroundColor(IndexedColors.INDIGO.getIndex());
+            styleHeader.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            styleHeader.setAlignment(HorizontalAlignment.CENTER);
+            styleHeader.setVerticalAlignment(VerticalAlignment.CENTER);
+            styleHeader.setBorderBottom(BorderStyle.THIN);
+            styleHeader.setBorderTop(BorderStyle.THIN);
+            styleHeader.setBorderLeft(BorderStyle.THIN);
+            styleHeader.setBorderRight(BorderStyle.THIN);
+
+            // --- Style: dữ liệu ---
+            CellStyle styleData = wb.createCellStyle();
+            styleData.setBorderBottom(BorderStyle.THIN);
+            styleData.setBorderTop(BorderStyle.THIN);
+            styleData.setBorderLeft(BorderStyle.THIN);
+            styleData.setBorderRight(BorderStyle.THIN);
+            styleData.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            CellStyle styleDataAlt = wb.createCellStyle();
+            styleDataAlt.cloneStyleFrom(styleData);
+            styleDataAlt.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleDataAlt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle styleCenter = wb.createCellStyle();
+            styleCenter.cloneStyleFrom(styleData);
+            styleCenter.setAlignment(HorizontalAlignment.CENTER);
+
+            CellStyle styleCenterAlt = wb.createCellStyle();
+            styleCenterAlt.cloneStyleFrom(styleCenter);
+            styleCenterAlt.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleCenterAlt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle styleNum = wb.createCellStyle();
+            styleNum.cloneStyleFrom(styleData);
+            styleNum.setAlignment(HorizontalAlignment.RIGHT);
+
+            CellStyle styleNumAlt = wb.createCellStyle();
+            styleNumAlt.cloneStyleFrom(styleNum);
+            styleNumAlt.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleNumAlt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // --- Dòng 0: Tiêu đề ---
+            Row rowTitle = sheet.createRow(0);
+            rowTitle.setHeightInPoints(28);
+            Cell cellTitle = rowTitle.createCell(0);
+            cellTitle.setCellValue("DANH SÁCH KHÁCH HÀNG — " + LocalDate.now());
+            cellTitle.setCellStyle(styleTieuDe);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+
+            // --- Dòng 1: Header ---
+            String[] headers = {"STT", "Mã KH", "Họ tên", "Số điện thoại", "Email", "Điểm tích lũy", "Trạng thái"};
+            int[]    colWidths = {6,     10,      24,       16,              26,      16,               18};
+
+            Row rowHeader = sheet.createRow(1);
+            rowHeader.setHeightInPoints(22);
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = rowHeader.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(styleHeader);
+                sheet.setColumnWidth(i, colWidths[i] * 256);
+            }
+
+            // --- Dữ liệu ---
+            int rowIdx = 2;
+            int stt = 1;
+            for (KhachHang kh : danhSach) {
+                boolean alt = (stt % 2 == 0);
+                Row row = sheet.createRow(rowIdx++);
+                row.setHeightInPoints(18);
+
+                boolean dangHD = !Boolean.FALSE.equals(kh.getTrangThai());
+
+                setCellStr(row, 0, String.valueOf(stt++),             alt ? styleCenterAlt : styleCenter);
+                setCellStr(row, 1, "KH" + kh.getMaKH(),              alt ? styleDataAlt : styleData);
+                setCellStr(row, 2, kh.getTenKH(),                     alt ? styleDataAlt : styleData);
+                setCellStr(row, 3, kh.getSdt()   != null ? kh.getSdt()   : "", alt ? styleDataAlt : styleData);
+                setCellStr(row, 4, kh.getEmail() != null ? kh.getEmail() : "", alt ? styleDataAlt : styleData);
+                setCellNum(row, 5, kh.getDiemTichLuy() != null ? kh.getDiemTichLuy() : 0, alt ? styleNumAlt : styleNum);
+                setCellStr(row, 6, dangHD ? "Đang hoạt động" : "Ngừng hoạt động", alt ? styleCenterAlt : styleCenter);
+            }
+
+            // --- Dòng tổng kết ---
+            CellStyle styleSum = wb.createCellStyle();
+            Font fontSum = wb.createFont();
+            fontSum.setBold(true);
+            styleSum.setFont(fontSum);
+            styleSum.setBorderTop(BorderStyle.MEDIUM);
+            styleSum.setBorderBottom(BorderStyle.THIN);
+            styleSum.setBorderLeft(BorderStyle.THIN);
+            styleSum.setBorderRight(BorderStyle.THIN);
+
+            Row rowSum = sheet.createRow(rowIdx);
+            rowSum.setHeightInPoints(20);
+            Cell cellSumLabel = rowSum.createCell(0);
+            cellSumLabel.setCellValue("Tổng cộng: " + danhSach.size() + " khách hàng");
+            cellSumLabel.setCellStyle(styleSum);
+            sheet.addMergedRegion(new CellRangeAddress(rowIdx, rowIdx, 0, 6));
+            for (int i = 1; i <= 6; i++) rowSum.createCell(i).setCellStyle(styleSum);
+
+            // --- Xuất ra response ---
+            String tenFile = "danh-sach-khach-hang-" + LocalDate.now() + ".xlsx";
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition",
+                    "attachment; filename*=UTF-8''" + java.net.URLEncoder.encode(tenFile, "UTF-8").replace("+", "%20"));
+            wb.write(response.getOutputStream());
+            response.getOutputStream().flush();
+        }
+    }
+
+    private void setCellStr(Row row, int col, String value, CellStyle style) {
+        Cell c = row.createCell(col);
+        c.setCellValue(value != null ? value : "");
+        c.setCellStyle(style);
+    }
+
+    private void setCellNum(Row row, int col, double value, CellStyle style) {
+        Cell c = row.createCell(col);
+        c.setCellValue(value);
+        c.setCellStyle(style);
     }
 
     // ================================================================

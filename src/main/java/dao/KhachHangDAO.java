@@ -82,6 +82,71 @@ public class KhachHangDAO {
         }
     }
 
+    // ================================================================
+    // Cac method co loc theo trangThai (null = tat ca, true = hoat dong, false = ngung)
+    // ================================================================
+
+    public List<KhachHang> getAllByTrangThai(Boolean trangThai, int trang, int soDongMoiTrang) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "FROM KhachHang kh" + buildWhereHql(trangThai, null) + " ORDER BY kh.tenKH";
+            return session.createQuery(hql, KhachHang.class)
+                    .setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    public long countAllByTrangThai(Boolean trangThai) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "SELECT COUNT(kh) FROM KhachHang kh" + buildWhereHql(trangThai, null);
+            Long c = session.createQuery(hql, Long.class).uniqueResult();
+            return c == null ? 0 : c;
+        }
+    }
+
+    public List<KhachHang> searchByTrangThai(String tuKhoa, Boolean trangThai, int trang, int soDongMoiTrang) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String like = "%" + tuKhoa.toLowerCase() + "%";
+            String hql = "FROM KhachHang kh" + buildWhereHql(trangThai, "q") + " ORDER BY kh.tenKH";
+            return session.createQuery(hql, KhachHang.class)
+                    .setParameter("q", like)
+                    .setFirstResult((trang - 1) * soDongMoiTrang)
+                    .setMaxResults(soDongMoiTrang)
+                    .getResultList();
+        }
+    }
+
+    public long countSearchByTrangThai(String tuKhoa, Boolean trangThai) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String like = "%" + tuKhoa.toLowerCase() + "%";
+            String hql = "SELECT COUNT(kh) FROM KhachHang kh" + buildWhereHql(trangThai, "q");
+            Long c = session.createQuery(hql, Long.class)
+                    .setParameter("q", like)
+                    .uniqueResult();
+            return c == null ? 0 : c;
+        }
+    }
+
+    /** Xay dung menh de WHERE dong cho HQL. qParam != null -> them dieu kien tim kiem. */
+    private String buildWhereHql(Boolean trangThai, String qParam) {
+        StringBuilder sb = new StringBuilder();
+        boolean hasWhere = false;
+        if (qParam != null) {
+            sb.append(" WHERE (LOWER(kh.tenKH) LIKE :").append(qParam)
+              .append(" OR LOWER(kh.sdt) LIKE :").append(qParam).append(")");
+            hasWhere = true;
+        }
+        if (trangThai != null) {
+            sb.append(hasWhere ? " AND " : " WHERE ");
+            if (Boolean.TRUE.equals(trangThai)) {
+                sb.append("(kh.trangThai IS NULL OR kh.trangThai = true)");
+            } else {
+                sb.append("kh.trangThai = false");
+            }
+        }
+        return sb.toString();
+    }
+
     public KhachHang getById(Integer maKH) {
         if (maKH == null) return null;
         try (Session session = HibernateConfig.getFACTORY().openSession()) {
@@ -156,6 +221,19 @@ public class KhachHangDAO {
         } catch (RuntimeException e) {
             if (tx != null) tx.rollback();
             throw e;
+        }
+    }
+
+    /** Lay toan bo khach hang (khong phan trang) theo bo loc - dung cho xuat Excel. */
+    public List<KhachHang> getAllForExport(String tuKhoa, Boolean trangThai) {
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            String hql = "FROM KhachHang kh" + buildWhereHql(trangThai, tuKhoa != null && !tuKhoa.isBlank() ? "q" : null)
+                    + " ORDER BY kh.tenKH";
+            var query = session.createQuery(hql, KhachHang.class);
+            if (tuKhoa != null && !tuKhoa.isBlank()) {
+                query.setParameter("q", "%" + tuKhoa.toLowerCase() + "%");
+            }
+            return query.getResultList();
         }
     }
 

@@ -19,23 +19,84 @@ public class DonHangDAO {
     private static final String DA_BAN = "Đã bán";
 
     /**
-     * Moi: thu nho SoTienGiam (giam gia voucher, von duoc chot 1 lan luc tao don) theo dung
-     * ty le voi phan gia tri hang con lai, moi khi tra/doi lam giam gia tri hang trong don.
-     * Neu khong lam viec nay, tra het hang se khien TongTien = 0 - SoTienGiam (con nguyen) < 0.
-     * @param dh              don hang can cap nhat (se bi sua TongTien va SoTienGiam)
-     * @param giaTriHangGiam  phan gia tri hang GIAM DI do lan tra/doi nay (> 0)
+     * Moi: tong so cuon (SachVatLy) con o trang thai 'Đã bán' cua CA DON hang - dung lam
+     * mau so de chia deu SoTienGiam cho tung cuon (xem tinhGiamMoiCuon). Goi TRUOC khi doi
+     * trang thai cac cuon dang tra/doi trong luot nay, de con tinh ca chung vao mau so.
      */
-    private void capNhatTienSauKhiGiamGiaTriHang(DonHang dh, BigDecimal giaTriHangGiam) {
+    private long demSoLuongConLaiToanDon(Session session, Integer maDH) {
+        Long c = session.createQuery(
+                        "SELECT COUNT(sv) FROM SachVatLy sv WHERE sv.chiTietDonHang.donHang.maDH = :maDH " +
+                                "AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))", Long.class)
+                .setParameter("maDH", maDH)
+                .setParameter("tt", DA_BAN)
+                .uniqueResult();
+        return c == null ? 0 : c;
+    }
+
+    /**
+     * Moi: muc giam gia voucher CHIA DEU cho MOI cuon sach con lai trong don (khong chia theo
+     * ty le gia tri nhu truoc, ma chia deu tren dau cuon) - dung de tra dung so tien khach da
+     * duoc giam khi tra 1 cuon cu the. Vi du: don 1 cuon 90k con voucher giam con 80k -> tra
+     * lai dung 80k (giam deu/cuon = 10k, ma con lai = 1). Don nhieu cuon: giam deu/cuon =
+     * SoTienGiam / tong so cuon con lai, ap dung nhu nhau cho moi cuon bat ke gia tri.
+     */
+    private BigDecimal tinhGiamMoiCuon(DonHang dh, long soLuongConLaiToanDon) {
+        BigDecimal soTienGiam = dh.getSoTienGiam() == null ? BigDecimal.ZERO : dh.getSoTienGiam();
+        if (soLuongConLaiToanDon <= 0 || soTienGiam.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
+        return soTienGiam.divide(BigDecimal.valueOf(soLuongConLaiToanDon), 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Moi: cap nhat TongTien/SoTienGiam sau khi TRA hang lam giam gia tri hang trong don.
+     * Khac voi doi hang: TRA hang KHONG kiem tra lai muc toi thieu cua voucher va KHONG huy
+     * voucher du gia tri hang con lai tut duoi muc do - voucher van tiep tuc duoc ap dung
+     * (chia deu) cho cac quyen con lai trong don, chi tru dung phan SoTienGiam da "tieu thu"
+     * boi nhung cuon vua tra (xem tinhGiamMoiCuon o goi noi).
+     * @param dh                don hang can cap nhat (se bi sua TongTien va SoTienGiam)
+     * @param giaTriHangGiam    phan gia tri hang (theo don gia goc) GIAM DI do lan tra nay (> 0)
+     * @param soTienGiamTruDi   phan SoTienGiam bi "tieu thu" boi cac cuon vua tra nay
+     */
+    private void capNhatTienSauKhiTraHang(DonHang dh, BigDecimal giaTriHangGiam, BigDecimal soTienGiamTruDi) {
         BigDecimal soTienGiamCu = dh.getSoTienGiam() == null ? BigDecimal.ZERO : dh.getSoTienGiam();
-        BigDecimal truoc = dh.getTongTien().add(soTienGiamCu); // gia tri hang truoc thao tac nay
+        BigDecimal truoc = dh.getTongTien().add(soTienGiamCu); // gia tri hang (tho) truoc thao tac nay
         BigDecimal sau = truoc.subtract(giaTriHangGiam);
         if (sau.compareTo(BigDecimal.ZERO) < 0) sau = BigDecimal.ZERO;
 
-        BigDecimal soTienGiamMoi = soTienGiamCu;
-        if (soTienGiamCu.compareTo(BigDecimal.ZERO) > 0 && truoc.compareTo(BigDecimal.ZERO) > 0) {
-            soTienGiamMoi = soTienGiamCu.multiply(sau)
-                    .divide(truoc, 2, java.math.RoundingMode.HALF_UP);
-        }
+        BigDecimal soTienGiamMoi = soTienGiamCu.subtract(soTienGiamTruDi == null ? BigDecimal.ZERO : soTienGiamTruDi);
+        if (soTienGiamMoi.compareTo(BigDecimal.ZERO) < 0) soTienGiamMoi = BigDecimal.ZERO;
+        // Moi: KHONG kiem tra GiaTriDonToiThieu o day nua - tra hang khong huy voucher, voucher
+        // con lai (neu co) van tiep tuc chia deu cho cac quyen con lai trong don.
+
+        BigDecimal tongTienMoi = sau.subtract(soTienGiamMoi);
+        if (tongTienMoi.compareTo(BigDecimal.ZERO) < 0) tongTienMoi = BigDecimal.ZERO; // an toan, khong bao gio am
+
+        dh.setSoTienGiam(soTienGiamMoi);
+        dh.setTongTien(tongTienMoi);
+    }
+
+    /**
+     * Moi: cap nhat TongTien/SoTienGiam sau khi DOI sang sach RE HON lam giam gia tri hang.
+     * Rieng doi hang (khac tra hang o tren) VAN kiem tra lai muc toi thieu cua voucher: vi
+     * doi hang khong lam thay doi tong so cuon trong don, SoTienGiam duoc GIU NGUYEN neu con
+     * du dieu kien; chi huy han (SoTienGiam = 0) neu gia tri hang tut xuong DUOI muc toi thieu
+     * cua voucher (GiaTriDonToiThieu) - dung yeu cau nghiep vu rieng cho doi hang.
+     * @param dh              don hang can cap nhat (se bi sua TongTien va SoTienGiam)
+     * @param giaTriHangGiam  phan gia tri hang GIAM DI do doi sang sach re hon (> 0)
+     */
+    private void capNhatTienSauKhiDoiSangSachRe(DonHang dh, BigDecimal giaTriHangGiam) {
+        BigDecimal soTienGiamCu = dh.getSoTienGiam() == null ? BigDecimal.ZERO : dh.getSoTienGiam();
+        BigDecimal truoc = dh.getTongTien().add(soTienGiamCu); // gia tri hang (tho) truoc thao tac nay
+        BigDecimal sau = truoc.subtract(giaTriHangGiam);
+        if (sau.compareTo(BigDecimal.ZERO) < 0) sau = BigDecimal.ZERO;
+
+        Voucher vc = dh.getVoucher();
+        boolean conDuDieuKienVoucher = vc == null || vc.getGiaTriDonToiThieu() == null
+                || sau.compareTo(vc.getGiaTriDonToiThieu()) >= 0;
+
+        // Con du dieu kien -> giu nguyen SoTienGiam (doi hang khong lam giam so cuon trong don).
+        // Khong con du dieu kien toi thieu -> huy han giam gia.
+        BigDecimal soTienGiamMoi = conDuDieuKienVoucher ? soTienGiamCu : BigDecimal.ZERO;
+
         BigDecimal tongTienMoi = sau.subtract(soTienGiamMoi);
         if (tongTienMoi.compareTo(BigDecimal.ZERO) < 0) tongTienMoi = BigDecimal.ZERO; // an toan, khong bao gio am
 
@@ -277,11 +338,16 @@ public class DonHangDAO {
     /**
      * Tạo đơn hàng từ giỏ hàng có biến thể (CartItem).
      * Mỗi CartItem mang maBienThe (null/0 = không có biến thể, dùng giá sach.giaBan).
+     * @param maCodeVoucher Moi: ma voucher (Voucher.MaCode) da ap dung cho don, co the null/rong
+     *                      neu khong dung voucher. Truoc day tham so nay khong ton tai nen
+     *                      DonHang.MaVoucher luon la NULL du SoTienGiam van duoc luu dung -
+     *                      khien luc tra/doi hang khong biet duoc dieu kien toi thieu cua
+     *                      voucher da dung de kiem tra lai.
      * @return maDH vừa tạo
      */
     public int taoDonHangBienThe(Integer maKH, Integer maNV, String phuongThuc,
                                  java.util.List<entity.CartItem> items,
-                                 java.math.BigDecimal soTienGiam) {
+                                 java.math.BigDecimal soTienGiam, String maCodeVoucher) {
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("Giỏ hàng trống.");
         }
@@ -302,6 +368,13 @@ public class DonHangDAO {
             dh.setKhachHang(kh);
             dh.setNhanVien(nv);
             dh.setSoTienGiam(soTienGiam == null ? BigDecimal.ZERO : soTienGiam);
+            if (maCodeVoucher != null && !maCodeVoucher.isBlank()) {
+                Voucher vc = session.createQuery(
+                                "FROM Voucher v WHERE v.maCode = :c", Voucher.class)
+                        .setParameter("c", maCodeVoucher.trim())
+                        .uniqueResult();
+                dh.setVoucher(vc); // vc co the null neu ma khong ton tai - khong chan don hang
+            }
             session.persist(dh);
             session.flush();
 
@@ -490,6 +563,25 @@ public class DonHangDAO {
                 throw new IllegalArgumentException("Không tìm thấy sản phẩm trong đơn hàng.");
             }
 
+            DonHang dh = ct.getDonHang();
+
+            // Moi: dem tong so cuon con lai TOAN DON (goi TRUOC khi doi trang thai cac cuon
+            // sap tra trong luot nay, de con tinh ca chung vao mau so) - dung de chia deu
+            // SoTienGiam cua voucher cho tung cuon: don 1 cuon -> tra dung gia da giam voucher;
+            // don nhieu cuon -> giam deu/cuon, tra lai theo dung phan giam cua so cuon dang tra.
+            long soLuongConLaiToanDon = demSoLuongConLaiToanDon(session, dh.getMaDH());
+            BigDecimal giamMoiCuon = tinhGiamMoiCuon(dh, soLuongConLaiToanDon);
+
+            BigDecimal donGia = ct.getDonGia();
+            BigDecimal giaHoanMoiCuon = donGia.subtract(giamMoiCuon);
+            if (giaHoanMoiCuon.compareTo(BigDecimal.ZERO) < 0) giaHoanMoiCuon = BigDecimal.ZERO;
+            // So tien THUC TE hoan lai khach = gia da ap dung voucher (chia deu) * so luong tra
+            BigDecimal soTienHoan = giaHoanMoiCuon.multiply(BigDecimal.valueOf(soLuongTra));
+            // Gia tri hang (theo don gia goc, chua giam) bi giam di do lan tra nay
+            BigDecimal giaTriHangGiam = donGia.multiply(BigDecimal.valueOf(soLuongTra));
+            // Phan SoTienGiam da "gan" cho dung nhung cuon vua tra, can tru khoi SoTienGiam con lai
+            BigDecimal soTienGiamTruDi = giamMoiCuon.multiply(BigDecimal.valueOf(soLuongTra));
+
             List<SachVatLy> cuonDaBan = session.createQuery(
                             "FROM SachVatLy sv WHERE sv.chiTietDonHang.maCTDH = :ma AND UPPER(TRIM(sv.trangThai)) = UPPER(TRIM(:tt))",
                             SachVatLy.class)
@@ -504,13 +596,10 @@ public class DonHangDAO {
                 sv.setTrangThai(CO_SAN);
             }
 
-            DonHang dh = ct.getDonHang();
-            BigDecimal soTienHoan = ct.getDonGia().multiply(BigDecimal.valueOf(soLuongTra));
-            // Moi: thu nho SoTienGiam theo ty le thay vi chi tru thang TongTien, tranh am tien
-            // khi tra het/tra gan het hang cua don co ap dung voucher.
-            capNhatTienSauKhiGiamGiaTriHang(dh, soTienHoan);
+            capNhatTienSauKhiTraHang(dh, giaTriHangGiam, soTienGiamTruDi);
 
-            // Ghi lịch sử trả hàng
+            // Ghi lịch sử trả hàng - ChenhLechTien luu SO TIEN THUC HOAN (da tinh voucher chia
+            // deu o tren), khong phai gia goc, de trang chi tiet/phieu in hien dung so tien tra.
             LichSuDoiTra ls = new LichSuDoiTra();
             ls.setDonHang(dh);
             ls.setLoaiGiaoDich("TRA");
@@ -624,9 +713,13 @@ public class DonHangDAO {
             // Chenh lech tien: duong = khach tra them, am = cua hang hoan lai cho khach
             BigDecimal chenhLech = giaMoi.subtract(giaCu).multiply(BigDecimal.valueOf(soLuongDoi));
             if (chenhLech.compareTo(BigDecimal.ZERO) < 0) {
-                // Moi: doi sang sach re hon lam giam gia tri hang trong don -> thu nho SoTienGiam
-                // theo ty le, tranh am tien giong nhu truong hop tra hang.
-                capNhatTienSauKhiGiamGiaTriHang(dh, chenhLech.negate());
+                // Moi: doi sang sach re hon lam giam gia tri hang trong don. Vi doi hang KHONG
+                // lam thay doi tong so cuon trong don (1 cuon cu ra - 1 cuon moi vao), muc giam
+                // gia voucher van giu nguyen (SoTienGiam khong bi tru), chi kiem tra lai dieu
+                // kien toi thieu: neu gia tri hang giam khien don TUT XUONG DUOI muc toi thieu
+                // cua voucher thi huy han giam gia. (Rieng TRA hang thi KHONG kiem tra dieu
+                // kien nay - xem capNhatTienSauKhiTraHang.)
+                capNhatTienSauKhiDoiSangSachRe(dh, chenhLech.negate());
             } else {
                 dh.setTongTien(dh.getTongTien().add(chenhLech));
             }

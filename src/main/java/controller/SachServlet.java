@@ -9,6 +9,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +20,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -82,8 +86,16 @@ public class SachServlet extends HttpServlet {
             return;
         }
 
-        // Mac dinh: hien danh sach (co the kem tu khoa tim kiem)
-        hienDanhSach(request, response, request.getParameter("q"));
+        if ("xuatExcel".equals(action)) {
+            xuLyXuatExcel(request, response);
+            return;
+        }
+
+        // Mac dinh: hien danh sach (co the kem tu khoa tim kiem va loc trang thai)
+        hienDanhSach(request, response, request.getParameter("q"), request.getParameter("trangThai"));
+    }
+
+    private void hienDanhSach(HttpServletRequest request, HttpServletResponse response, Object o) {
     }
 
     @Override
@@ -125,29 +137,45 @@ public class SachServlet extends HttpServlet {
     // ================================================================
     private static final int SO_DONG_MOI_TRANG = 10;
 
-    private void hienDanhSach(HttpServletRequest request, HttpServletResponse response, String tuKhoa)
+    private void hienDanhSach(HttpServletRequest request, HttpServletResponse response,
+                              String tuKhoa, String trangThaiParam)
             throws ServletException, IOException {
 
         int trang = parseTrang(request.getParameter("page"));
         boolean coTimKiem = (tuKhoa != null && !tuKhoa.trim().isEmpty());
 
-        long tongSo = coTimKiem ? sachDAO.countSearch(tuKhoa.trim()) : sachDAO.countAll();
-        int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
-        if (trang > tongSoTrang) trang = tongSoTrang;
+        // Phan tich tham so trangThai: "1" = kinh doanh, "0" = ngung, "" / null = tat ca
+        Boolean trangThaiLoc = null;
+        if ("1".equals(trangThaiParam)) trangThaiLoc = Boolean.TRUE;
+        else if ("0".equals(trangThaiParam)) trangThaiLoc = Boolean.FALSE;
 
-        List<Sach> danhSach = coTimKiem
-                ? sachDAO.search(tuKhoa.trim(), trang, SO_DONG_MOI_TRANG)
-                : sachDAO.getAll(trang, SO_DONG_MOI_TRANG);
+        long tongSo;
+        List<Sach> danhSach;
+
+        if (coTimKiem) {
+            tongSo  = sachDAO.countSearchByTrangThai(tuKhoa.trim(), trangThaiLoc);
+            int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
+            if (trang > tongSoTrang) trang = tongSoTrang;
+            danhSach = sachDAO.searchByTrangThai(tuKhoa.trim(), trangThaiLoc, trang, SO_DONG_MOI_TRANG);
+        } else {
+            tongSo  = sachDAO.countAllByTrangThai(trangThaiLoc);
+            int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
+            if (trang > tongSoTrang) trang = tongSoTrang;
+            danhSach = sachDAO.getAllByTrangThai(trangThaiLoc, trang, SO_DONG_MOI_TRANG);
+        }
+
+        int tongSoTrang = (int) Math.max(1, Math.ceil(tongSo / (double) SO_DONG_MOI_TRANG));
 
         Map<String, Long> tonKhoMap = sachDAO.getTonKhoMap();
 
-        request.setAttribute("danhSachSach", danhSach);
-        request.setAttribute("tonKhoMap", tonKhoMap);
-        request.setAttribute("tuKhoa", tuKhoa);
-        request.setAttribute("trangHienTai", trang);
-        request.setAttribute("tongSoTrang", tongSoTrang);
-        request.setAttribute("tongSoSach", tongSo);
-        request.setAttribute("activeMenu", "sach");
+        request.setAttribute("danhSachSach",  danhSach);
+        request.setAttribute("tonKhoMap",     tonKhoMap);
+        request.setAttribute("tuKhoa",        tuKhoa);
+        request.setAttribute("trangThaiLoc",  trangThaiParam != null ? trangThaiParam : "");
+        request.setAttribute("trangHienTai",  trang);
+        request.setAttribute("tongSoTrang",   tongSoTrang);
+        request.setAttribute("tongSoSach",    tongSo);
+        request.setAttribute("activeMenu",    "sach");
         request.getRequestDispatcher("/view/sach.jsp").forward(request, response);
     }
 
@@ -357,6 +385,7 @@ public class SachServlet extends HttpServlet {
         String maSach = request.getParameter("ma");
         String trang = request.getParameter("page");
         String q = request.getParameter("q");
+        String trangThai = request.getParameter("trangThai");
         try {
             sachDAO.doiTrangThai(maSach);
         } catch (Exception ignored) {
@@ -364,7 +393,8 @@ public class SachServlet extends HttpServlet {
         }
         String redirect = request.getContextPath() + "/sach?"
                 + (trang != null ? "page=" + trang : "page=1")
-                + (q != null && !q.isBlank() ? "&q=" + java.net.URLEncoder.encode(q, "UTF-8") : "");
+                + (q != null && !q.isBlank() ? "&q=" + java.net.URLEncoder.encode(q, "UTF-8") : "")
+                + (trangThai != null && !trangThai.isBlank() ? "&trangThai=" + trangThai : "");
         response.sendRedirect(redirect);
     }
 
@@ -512,6 +542,179 @@ public class SachServlet extends HttpServlet {
     private void chuyenVeSuaVoiLoi(HttpServletRequest request, HttpServletResponse response, String maSach, String loi) throws IOException {
         response.sendRedirect(request.getContextPath() + "/sach?action=edit&ma=" + maSach + "&loiBienThe="
                 + java.net.URLEncoder.encode(loi, "UTF-8"));
+    }
+
+    // ================================================================
+    // Xuat Excel
+    // ================================================================
+    private void xuLyXuatExcel(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+
+        String tuKhoa = request.getParameter("q");
+        String trangThaiParam = request.getParameter("trangThai");
+
+        Boolean trangThaiLoc = null;
+        if ("1".equals(trangThaiParam)) trangThaiLoc = Boolean.TRUE;
+        else if ("0".equals(trangThaiParam)) trangThaiLoc = Boolean.FALSE;
+
+        List<Sach> danhSach = sachDAO.getAllForExport(tuKhoa, trangThaiLoc);
+        Map<String, Long> tonKhoMap = sachDAO.getTonKhoMap();
+
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            Sheet sheet = wb.createSheet("Danh sach sach");
+            sheet.setDefaultColumnWidth(18);
+
+            // --- Style: tieu de chinh ---
+            CellStyle styleTieuDe = wb.createCellStyle();
+            Font fontTieuDe = wb.createFont();
+            fontTieuDe.setBold(true);
+            fontTieuDe.setFontHeightInPoints((short) 14);
+            styleTieuDe.setFont(fontTieuDe);
+            styleTieuDe.setAlignment(HorizontalAlignment.CENTER);
+            styleTieuDe.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            // --- Style: header cot ---
+            CellStyle styleHeader = wb.createCellStyle();
+            Font fontHeader = wb.createFont();
+            fontHeader.setBold(true);
+            fontHeader.setFontHeightInPoints((short) 11);
+            styleHeader.setFont(fontHeader);
+            styleHeader.setFillForegroundColor(IndexedColors.INDIGO.getIndex());
+            styleHeader.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            Font fontHeaderWhite = wb.createFont();
+            fontHeaderWhite.setBold(true);
+            fontHeaderWhite.setColor(IndexedColors.WHITE.getIndex());
+            fontHeaderWhite.setFontHeightInPoints((short) 11);
+            styleHeader.setFont(fontHeaderWhite);
+            styleHeader.setAlignment(HorizontalAlignment.CENTER);
+            styleHeader.setVerticalAlignment(VerticalAlignment.CENTER);
+            styleHeader.setBorderBottom(BorderStyle.THIN);
+            styleHeader.setBorderTop(BorderStyle.THIN);
+            styleHeader.setBorderLeft(BorderStyle.THIN);
+            styleHeader.setBorderRight(BorderStyle.THIN);
+
+            // --- Style: o du lieu chan/le ---
+            CellStyle styleData = wb.createCellStyle();
+            styleData.setBorderBottom(BorderStyle.THIN);
+            styleData.setBorderTop(BorderStyle.THIN);
+            styleData.setBorderLeft(BorderStyle.THIN);
+            styleData.setBorderRight(BorderStyle.THIN);
+            styleData.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            CellStyle styleDataAlt = wb.createCellStyle();
+            styleDataAlt.cloneStyleFrom(styleData);
+            styleDataAlt.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleDataAlt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle styleGia = wb.createCellStyle();
+            styleGia.cloneStyleFrom(styleData);
+            DataFormat df = wb.createDataFormat();
+            styleGia.setDataFormat(df.getFormat("#,##0"));
+            styleGia.setAlignment(HorizontalAlignment.RIGHT);
+
+            CellStyle styleGiaAlt = wb.createCellStyle();
+            styleGiaAlt.cloneStyleFrom(styleGia);
+            styleGiaAlt.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleGiaAlt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle styleCenter = wb.createCellStyle();
+            styleCenter.cloneStyleFrom(styleData);
+            styleCenter.setAlignment(HorizontalAlignment.CENTER);
+
+            CellStyle styleCenterAlt = wb.createCellStyle();
+            styleCenterAlt.cloneStyleFrom(styleCenter);
+            styleCenterAlt.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleCenterAlt.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // --- Dong 0: Tieu de ---
+            Row rowTitle = sheet.createRow(0);
+            rowTitle.setHeightInPoints(28);
+            Cell cellTitle = rowTitle.createCell(0);
+            cellTitle.setCellValue("DANH SÁCH SÁCH — " + LocalDate.now());
+            cellTitle.setCellStyle(styleTieuDe);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 9));
+
+            // --- Dong 1: Header ---
+            String[] headers = {"STT", "Mã sách", "Tên sách", "Thể loại",
+                                 "Nhà xuất bản", "Năm XB", "Giá bán (VNĐ)",
+                                 "Tồn kho", "Trạng thái", "Ghi chú"};
+            int[] colWidths =   {6,      14,        36,        18,
+                                  22,             10,       18,
+                                  12,       16,          20};
+
+            Row rowHeader = sheet.createRow(1);
+            rowHeader.setHeightInPoints(22);
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = rowHeader.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(styleHeader);
+                sheet.setColumnWidth(i, colWidths[i] * 256);
+            }
+
+            // --- Du lieu ---
+            int rowIdx = 2;
+            int stt = 1;
+            for (Sach s : danhSach) {
+                boolean alt = (stt % 2 == 0);
+                Row row = sheet.createRow(rowIdx++);
+                row.setHeightInPoints(18);
+
+                long ton = tonKhoMap.getOrDefault(s.getMaSach(), 0L);
+                boolean dangKD = !Boolean.FALSE.equals(s.getTrangThai());
+
+                setCellStr(row, 0, String.valueOf(stt++),              alt ? styleCenterAlt : styleCenter);
+                setCellStr(row, 1, s.getMaSach(),                      alt ? styleDataAlt : styleData);
+                setCellStr(row, 2, s.getTenSach(),                     alt ? styleDataAlt : styleData);
+                setCellStr(row, 3, s.getTheLoai()  != null ? s.getTheLoai().getTenTL()   : "", alt ? styleDataAlt : styleData);
+                setCellStr(row, 4, s.getNhaXuatBan() != null ? s.getNhaXuatBan().getTenNXB() : "", alt ? styleDataAlt : styleData);
+                setCellNum(row, 5, s.getNamXB() != null ? s.getNamXB().doubleValue() : 0, alt ? styleDataAlt : styleData);
+                setCellNum(row, 6, s.getGiaBan() != null ? s.getGiaBan().doubleValue() : 0, alt ? styleGiaAlt : styleGia);
+                setCellNum(row, 7, ton,                                alt ? styleCenterAlt : styleCenter);
+                setCellStr(row, 8, dangKD ? "Đang kinh doanh" : "Ngừng kinh doanh", alt ? styleCenterAlt : styleCenter);
+                setCellStr(row, 9, "",                                 alt ? styleDataAlt : styleData);
+            }
+
+            // --- Dong tong ket ---
+            Row rowSum = sheet.createRow(rowIdx);
+            rowSum.setHeightInPoints(20);
+            CellStyle styleSum = wb.createCellStyle();
+            Font fontSum = wb.createFont();
+            fontSum.setBold(true);
+            styleSum.setFont(fontSum);
+            styleSum.setBorderTop(BorderStyle.MEDIUM);
+            styleSum.setBorderBottom(BorderStyle.THIN);
+            styleSum.setBorderLeft(BorderStyle.THIN);
+            styleSum.setBorderRight(BorderStyle.THIN);
+
+            Cell cellSumLabel = rowSum.createCell(0);
+            cellSumLabel.setCellValue("Tổng cộng: " + danhSach.size() + " đầu sách");
+            cellSumLabel.setCellStyle(styleSum);
+            sheet.addMergedRegion(new CellRangeAddress(rowIdx, rowIdx, 0, 9));
+            for (int i = 1; i <= 9; i++) {
+                Cell c = rowSum.createCell(i);
+                c.setCellStyle(styleSum);
+            }
+
+            // --- Xuat ra response ---
+            String tenFile = "danh-sach-sach-" + LocalDate.now() + ".xlsx";
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition",
+                    "attachment; filename*=UTF-8''" + java.net.URLEncoder.encode(tenFile, "UTF-8").replace("+", "%20"));
+            wb.write(response.getOutputStream());
+            response.getOutputStream().flush();
+        }
+    }
+
+    private void setCellStr(Row row, int col, String value, CellStyle style) {
+        Cell c = row.createCell(col);
+        c.setCellValue(value != null ? value : "");
+        c.setCellStyle(style);
+    }
+
+    private void setCellNum(Row row, int col, double value, CellStyle style) {
+        Cell c = row.createCell(col);
+        c.setCellValue(value);
+        c.setCellStyle(style);
     }
 }
 

@@ -22,10 +22,18 @@
                 <h4 class="fw-bold mb-0" style="color:#0f172a;">Quản lý Khách hàng</h4>
                 <p class="text-muted mb-0" style="font-size:13px;">Khách hàng mua trực tiếp tại quầy (bán offline, không giao hàng).</p>
             </div>
-            <a href="${pageContext.request.contextPath}/khachhang?action=new" class="btn text-white fw-semibold"
-               style="background-color:#4f46e5;border-radius:8px;font-size:13.5px;padding:10px 18px;">
-                <i class="bi bi-person-plus-fill me-1"></i> Thêm khách hàng
-            </a>
+            <div class="d-flex gap-2">
+                <a href="${pageContext.request.contextPath}/khachhang?action=xuatExcel${not empty tuKhoa ? '&q='.concat(tuKhoa) : ''}${not empty trangThaiLoc and trangThaiLoc != '' ? '&trangThai='.concat(trangThaiLoc) : ''}"
+                   class="btn text-white fw-semibold shadow-sm"
+                   style="background-color:#16a34a;border-radius:8px;font-size:13.5px;padding:10px 18px;"
+                   title="Xuất danh sách khách hàng hiện tại ra file Excel">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+                </a>
+                <a href="${pageContext.request.contextPath}/khachhang?action=new" class="btn text-white fw-semibold"
+                   style="background-color:#4f46e5;border-radius:8px;font-size:13.5px;padding:10px 18px;">
+                    <i class="bi bi-person-plus-fill me-1"></i> Thêm khách hàng
+                </a>
+            </div>
         </div>
 
         <c:if test="${param.thanhCong == '1'}">
@@ -43,11 +51,23 @@
 
         <div class="card bg-white border mb-3" style="border-color:#e2e8f0;border-radius:10px;">
             <div class="card-body p-3">
-                <form method="get" action="${pageContext.request.contextPath}/khachhang" class="d-flex gap-2">
-                    <input type="text" name="q" value="${tuKhoa}" class="form-control" placeholder="Tìm theo tên hoặc số điện thoại..." style="max-width:360px;font-size:13.5px;">
-                    <button type="submit" class="btn btn-outline-secondary" style="font-size:13px;border-radius:6px;">Tìm</button>
-                    <c:if test="${not empty tuKhoa}">
-                        <a href="${pageContext.request.contextPath}/khachhang" class="btn btn-link text-decoration-none" style="font-size:13px;">Xóa lọc</a>
+                <form method="get" action="${pageContext.request.contextPath}/khachhang" class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="input-group" style="max-width:360px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;">
+                        <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" value="${tuKhoa}" class="form-control border-0" placeholder="Tìm theo tên hoặc số điện thoại..." style="font-size:13.5px;box-shadow:none;">
+                    </div>
+                    <select name="trangThai" class="form-select" style="max-width:180px;font-size:13px;border-color:#cbd5e1;border-radius:6px;">
+                        <option value=""  ${trangThaiLoc == ''  ? 'selected' : ''}>Tất cả trạng thái</option>
+                        <option value="1" ${trangThaiLoc == '1' ? 'selected' : ''}>Đang hoạt động</option>
+                        <option value="0" ${trangThaiLoc == '0' ? 'selected' : ''}>Ngừng hoạt động</option>
+                    </select>
+                    <button type="submit" class="btn text-white" style="background:#4f46e5;border-radius:6px;font-size:13px;">
+                        <i class="bi bi-funnel me-1"></i>Lọc
+                    </button>
+                    <c:if test="${not empty tuKhoa or (not empty trangThaiLoc and trangThaiLoc != '')}">
+                        <a href="${pageContext.request.contextPath}/khachhang" class="btn btn-link text-decoration-none" style="font-size:13px;color:#64748b;">
+                            <i class="bi bi-x-circle me-1"></i>Xóa lọc
+                        </a>
                     </c:if>
                 </form>
             </div>
@@ -94,6 +114,7 @@
                                     <input type="hidden" name="ma" value="${kh.maKH}">
                                     <input type="hidden" name="page" value="${trangHienTai}">
                                     <input type="hidden" name="q" value="${tuKhoa}">
+                                    <input type="hidden" name="trangThai" value="${trangThaiLoc}">
                                     <div class="form-check form-switch d-flex justify-content-center m-0">
                                         <input class="form-check-input toggle-submit" type="checkbox" role="switch"
                                                style="width:2.4em;height:1.3em;cursor:pointer;"
@@ -130,6 +151,7 @@
                             <c:url var="urlTruoc" value="/khachhang">
                                 <c:param name="page" value="${trangHienTai - 1}"/>
                                 <c:if test="${not empty tuKhoa}"><c:param name="q" value="${tuKhoa}"/></c:if>
+                                <c:if test="${not empty trangThaiLoc and trangThaiLoc != ''}"><c:param name="trangThai" value="${trangThaiLoc}"/></c:if>
                             </c:url>
                             <li class="page-item ${trangHienTai == 1 ? 'disabled' : ''}">
                                 <a class="page-link" href="${urlTruoc}">‹ Trước</a>
@@ -138,6 +160,7 @@
                                 <c:url var="urlTrang" value="/khachhang">
                                     <c:param name="page" value="${i}"/>
                                     <c:if test="${not empty tuKhoa}"><c:param name="q" value="${tuKhoa}"/></c:if>
+                                    <c:if test="${not empty trangThaiLoc and trangThaiLoc != ''}"><c:param name="trangThai" value="${trangThaiLoc}"/></c:if>
                                 </c:url>
                                 <li class="page-item ${i == trangHienTai ? 'active' : ''}">
                                     <a class="page-link" href="${urlTrang}"
@@ -147,6 +170,7 @@
                             <c:url var="urlSau" value="/khachhang">
                                 <c:param name="page" value="${trangHienTai + 1}"/>
                                 <c:if test="${not empty tuKhoa}"><c:param name="q" value="${tuKhoa}"/></c:if>
+                                <c:if test="${not empty trangThaiLoc and trangThaiLoc != ''}"><c:param name="trangThai" value="${trangThaiLoc}"/></c:if>
                             </c:url>
                             <li class="page-item ${trangHienTai == tongSoTrang ? 'disabled' : ''}">
                                 <a class="page-link" href="${urlSau}">Sau ›</a>
