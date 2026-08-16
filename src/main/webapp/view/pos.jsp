@@ -46,7 +46,8 @@
                                 <th class="ps-3"></th>
                                 <th>Mã</th>
                                 <th>Tên sách</th>
-                                <th>Biến thể / Giá</th>
+                                <th>Biến thể</th>
+                                <th>Giá</th>
                                 <th class="text-center">Tồn</th>
                                 <th></th>
                             </tr></thead>
@@ -68,17 +69,32 @@
                                     </td>
                                     <td class="fw-semibold">${s.maSach}</td>
                                     <td>${s.tenSach}</td>
-                                    <td style="min-width:220px;">
+                                    <td style="min-width:180px;">
                                         <c:choose>
                                             <c:when test="${not empty dsBT}">
-                                                <select id="bt_${s.maSach}" class="form-select form-select-sm" style="font-size:12.5px;">
+                                                <select id="bt_${s.maSach}" class="form-select form-select-sm" style="font-size:12.5px;"
+                                                        onchange="updateGia('${s.maSach}', this)">
                                                     <c:forEach var="bt" items="${dsBT}">
                                                         <option value="${bt.maBienThe}" data-gia="${bt.giaBienThe}">${bt.tenHienThi}</option>
                                                     </c:forEach>
                                                 </select>
                                             </c:when>
                                             <c:otherwise>
-                                                <span style="font-size:13px;"><fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</span>
+                                                <span class="text-muted" style="font-size:13px;">—</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td style="min-width:90px;">
+                                        <c:choose>
+                                            <c:when test="${not empty dsBT}">
+                                                <span id="gia_${s.maSach}" style="font-size:13px;white-space:nowrap;">
+                                                    <c:if test="${not empty dsBT}">
+                                                        <fmt:formatNumber value="${dsBT[0].giaBienThe}" pattern="#,##0"/> ₫
+                                                    </c:if>
+                                                </span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span style="font-size:13px;white-space:nowrap;"><fmt:formatNumber value="${s.giaBan}" pattern="#,##0"/> ₫</span>
                                             </c:otherwise>
                                         </c:choose>
                                     </td>
@@ -498,13 +514,13 @@
         }
 
         // Badge loại khách hàng (chỉ hiện khi đã chọn khách)
-         const badge = document.getElementById('lblKhachType');
-         if (typeof summary.isNewCustomer !== 'undefined' && selectKH.value) {
-             badge.style.display = '';
-             badge.textContent = summary.isNewCustomer ? 'Khách mới' : 'Khách quen';
-         } else {
-             badge.style.display = 'none';
-         }
+        const badge = document.getElementById('lblKhachType');
+        if (typeof summary.isNewCustomer !== 'undefined' && selectKH.value) {
+            badge.style.display = '';
+            badge.textContent = summary.isNewCustomer ? 'Khách mới' : 'Khách quen';
+        } else {
+            badge.style.display = 'none';
+        }
 
         tinhTienThoi();
     }
@@ -531,6 +547,16 @@
             const btn = row.querySelector('button.btn');
             if (btn) btn.disabled = conLai === 0;
         });
+    }
+
+    function updateGia(maSach, selectEl) {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        const gia = opt ? opt.getAttribute('data-gia') : null;
+        const giaEl = document.getElementById('gia_' + maSach);
+        if (giaEl && gia !== null) {
+            const num = parseFloat(gia);
+            giaEl.textContent = num.toLocaleString('vi-VN') + ' ₫';
+        }
     }
 
     function addToCart(maSach, maBienThe) {
@@ -696,8 +722,8 @@
                 selectKH.add(newOpt);
                 originalOptions.push(newOpt.cloneNode(true));
                 selectKH.value = data.maKH;
-                        // Khi thêm khách nhanh: thông báo server để cập nhật summary (isNewCustomer, voucher...)
-                        try { onSelectKhachChange(); } catch (e) { /* ignore */ }
+                // Khi thêm khách nhanh: thông báo server để cập nhật summary (isNewCustomer, voucher...)
+                try { onSelectKhachChange(); } catch (e) { /* ignore */ }
                 bootstrap.Modal.getInstance(document.getElementById('modalThemKH')).hide();
                 document.getElementById('newTenKH').value = '';
                 document.getElementById('newSdtKH').value = '';
