@@ -1,4 +1,4 @@
--- Migration: Thêm biến thể bìa sách và ngôn ngữ vào bảng Sach
+﻿-- Migration: Thêm biến thể bìa sách và ngôn ngữ vào bảng Sach
 -- Ngày: 2026-08-05
 
 ALTER TABLE Sach

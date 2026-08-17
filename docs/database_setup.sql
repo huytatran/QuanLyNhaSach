@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- SCRIPT TẠO DATABASE: QuanLyNhaSach
 -- Chạy toàn bộ script này trong SQL Server Management Studio
 -- ============================================================
@@ -205,16 +205,115 @@ CREATE TABLE SachBienThe (
 GO
 
 -- ============================================================
--- 4. DỮ LIỆU MẪU — tài khoản admin mặc định
+-- 4. NHẬP DỮ LIỆU MẪU CHUẨN TIẾNG VIỆT UNICODE (N'...')
 -- ============================================================
-INSERT INTO NhanVien (TenNV, Sdt, Email, DiaChi, TaiKhoan, MatKhau, VaiTroNV, TrangThai)
-VALUES (N'Admin', '0900000000', 'admin@bookstore.com', N'TP. HCM', 'admin', '123456', 1, 1);
 
-INSERT INTO NhanVien (TenNV, Sdt, Email, DiaChi, TaiKhoan, MatKhau, VaiTroNV, TrangThai)
-VALUES (N'Nhân Viên Demo', '0911111111', 'nv@bookstore.com', N'TP. HCM', 'nhanvien', '123456', 0, 1);
+-- Thể loại
+SET IDENTITY_INSERT TheLoai ON;
+INSERT INTO TheLoai (MaTL, TenTL) VALUES 
+(1, N'Tiểu Thuyết'),
+(2, N'Truyện Ngắn'),
+(3, N'Văn Học Việt Nam'),
+(4, N'Thiếu Nhi'),
+(5, N'Kỹ Năng Sống'),
+(6, N'Kinh Tế');
+SET IDENTITY_INSERT TheLoai OFF;
+
+-- Tác giả
+SET IDENTITY_INSERT TacGia ON;
+INSERT INTO TacGia (MaTG, TenTG, TieuSu) VALUES
+(1, N'Nguyễn Nhật Ánh', N'Nhà văn nổi tiếng với các tác phẩm dành cho tuổi mới lớn.'),
+(2, N'Tô Hoài', N'Nhà văn lớn của văn học hiện đại Việt Nam.'),
+(3, N'Nam Cao', N'Nhà văn thực dụng nổi tiếng trước 1945.'),
+(4, N'Vũ Trọng Phụng', N'Ông vua hiện thực trào phúng.'),
+(5, N'Nguyễn Du', N'Đại thi hào dân tộc Việt Nam.');
+SET IDENTITY_INSERT TacGia OFF;
+
+-- Nhà xuất bản
+SET IDENTITY_INSERT NhaXuatBan ON;
+INSERT INTO NhaXuatBan (MaNXB, TenNXB, Sdt, DiaChi) VALUES
+(1, N'NXB Trẻ', '02839316289', N'161 Lý Chính Thắng, Q.3, TP.HCM'),
+(2, N'NXB Kim Đồng', '02439434730', N'55 Quang Trung, Q. Hai Bà Trưng, Hà Nội'),
+(3, N'NXB Văn Học', '02438257253', N'18 Nguyễn Trường Tộ, Hà Nội'),
+(4, N'NXB Hội Nhà Văn', '02438222135', N'65 Nguyễn Du, Hà Nội');
+SET IDENTITY_INSERT NhaXuatBan OFF;
+
+-- Nhân viên
+INSERT INTO NhanVien (TenNV, Sdt, Email, DiaChi, TaiKhoan, MatKhau, VaiTroNV, TrangThai) VALUES
+(N'Quản Trị Viên', '0900000000', 'admin@bookstore.com', N'TP. Hồ Chí Minh', 'admin', '123456', 1, 1),
+(N'Nhân Viên Demo', '0911111111', 'nv@bookstore.com', N'TP. Hồ Chí Minh', 'nhanvien', '123456', 0, 1);
+
+-- Khách hàng
+INSERT INTO KhachHang (TenKH, Sdt, Email, DiemTichLuy, TrangThai) VALUES
+(N'Khách Hàng Vãng Lai', '0000000000', 'guest@bookstore.com', 0, 1),
+(N'Nguyễn Văn A', '0988888888', 'anguyen@gmail.com', 120, 1),
+(N'Trần Thị B', '0977777777', 'btran@gmail.com', 50, 1);
+
+-- Voucher
+INSERT INTO Voucher (MaCode, LoaiGiam, GiaTri, GiaTriDonToiThieu, GiaGiamToiDa, NgayBatDau, NgayKetThuc, SoLuongToiDa, DaSuDung) VALUES
+(N'WELCOME10', 1, 10.00, 100000.00, 50000.00, '2026-01-01', '2026-12-31', 200, 0),
+(N'GIAM50K', 2, 50000.00, 200000.00, 50000.00, '2026-01-01', '2026-12-31', 100, 0),
+(N'MEMBER15', 1, 15.00, 300000.00, 100000.00, '2026-01-01', '2026-12-31', 50, 0);
+
+-- Sách
+INSERT INTO Sach (MaSach, TenSach, NamXB, GiaBan, MaTL, MaNXB, TrangThai, AnhBia) VALUES
+('S001', N'Cho Tôi Xin Một Vé Đi Tuổi Thơ', 2008, 85000.00, 1, 2, 1, 'book-images/S001.webp'),
+('S002', N'Mắt Biếc', 1990, 98000.00, 1, 2, 1, NULL),
+('S003', N'Tôi Thấy Hoa Vàng Trên Cỏ Xanh', 2010, 110000.00, 1, 2, 1, NULL),
+('S004', N'Cô Gái Đến Từ Hôm Qua', 1989, 75000.00, 1, 2, 1, NULL),
+('S005', N'Kính Vạn Hoa - Tập 1', 1995, 65000.00, 4, 2, 1, NULL),
+('S006', N'Dế Mèn Phiêu Lưu Ký', 1941, 55000.00, 4, 2, 1, NULL),
+('S007', N'Sống Mòn', 1944, 82000.00, 3, 3, 1, NULL),
+('S008', N'Số Đỏ', 1936, 78000.00, 3, 3, 1, NULL),
+('S009', N'Truyện Kiều', 1820, 120000.00, 3, 4, 1, NULL);
+
+-- Sách tác giả
+INSERT INTO Sach_TacGia (MaSach, MaTG, VaiTroTG) VALUES
+('S001', 1, N'Tác giả'),
+('S002', 1, N'Tác giả'),
+('S003', 1, N'Tác giả'),
+('S004', 1, N'Tác giả'),
+('S005', 1, N'Tác giả'),
+('S006', 2, N'Tác giả'),
+('S007', 3, N'Tác giả'),
+('S008', 4, N'Tác giả'),
+('S009', 5, N'Tác giả');
+
+-- Sách biến thể (SachBienThe)
+INSERT INTO SachBienThe (MaSach, MaBienTheCode, BiaSach, NgonNgu, GiaBienThe, TrangThai) VALUES
+('S001', 'S001-BM-VI', N'Bìa mềm', N'Tiếng Việt', 85000.00, 1),
+('S001', 'S001-BC-VI', N'Bìa cứng', N'Tiếng Việt', 120000.00, 1),
+('S002', 'S002-BM-VI', N'Bìa mềm', N'Tiếng Việt', 98000.00, 1),
+('S003', 'S003-BM-VI', N'Bìa mềm', N'Tiếng Việt', 110000.00, 1),
+('S004', 'S004-BM-VI', N'Bìa mềm', N'Tiếng Việt', 75000.00, 1),
+('S005', 'S005-BM-VI', N'Bìa mềm', N'Tiếng Việt', 65000.00, 1),
+('S006', 'S006-BM-VI', N'Bìa mềm', N'Tiếng Việt', 55000.00, 1),
+('S007', 'S007-BM-VI', N'Bìa mềm', N'Tiếng Việt', 82000.00, 1),
+('S008', 'S008-BM-VI', N'Bìa mềm', N'Tiếng Việt', 78000.00, 1),
+('S009', 'S009-BM-VI', N'Bìa mềm', N'Tiếng Việt', 120000.00, 1);
+
+-- Sách vật lý (Kho tồn)
+INSERT INTO SachVatLy (MaSerial, MaSach, TrangThai) VALUES
+('SER-S001-001', 'S001', N'Có sẵn'),
+('SER-S001-002', 'S001', N'Có sẵn'),
+('SER-S001-003', 'S001', N'Có sẵn'),
+('SER-S001-004', 'S001', N'Có sẵn'),
+('SER-S001-005', 'S001', N'Có sẵn'),
+('SER-S002-001', 'S002', N'Có sẵn'),
+('SER-S002-002', 'S002', N'Có sẵn'),
+('SER-S002-003', 'S002', N'Có sẵn'),
+('SER-S003-001', 'S003', N'Có sẵn'),
+('SER-S003-002', 'S003', N'Có sẵn'),
+('SER-S004-001', 'S004', N'Có sẵn'),
+('SER-S005-001', 'S005', N'Có sẵn'),
+('SER-S006-001', 'S006', N'Có sẵn'),
+('SER-S007-001', 'S007', N'Có sẵn'),
+('SER-S008-001', 'S008', N'Có sẵn'),
+('SER-S009-001', 'S009', N'Có sẵn');
 GO
 
-PRINT N'=== Tạo database QuanLyNhaSach thành công! ===';
+PRINT N'=== Tạo database QuanLyNhaSach và dữ liệu mẫu chuẩn UTF-8 thành công! ===';
 PRINT N'Tài khoản admin: admin / 123456';
 PRINT N'Tài khoản nhân viên: nhanvien / 123456';
 GO
+

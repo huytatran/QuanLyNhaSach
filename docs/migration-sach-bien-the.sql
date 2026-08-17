@@ -1,4 +1,4 @@
--- Migration: Tạo bảng SachBienThe (biến thể sách có giá riêng)
+﻿-- Migration: Tạo bảng SachBienThe (biến thể sách có giá riêng)
 -- Ngày: 2026-08-05
 -- Mô tả: Mỗi đầu sách (Sach) có thể có nhiều biến thể (bìa mềm/cứng/đặc biệt, ngôn ngữ)
 --        mỗi biến thể mang mã riêng và giá bán riêng.

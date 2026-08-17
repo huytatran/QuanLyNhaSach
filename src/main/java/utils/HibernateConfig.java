@@ -23,6 +23,7 @@ public class HibernateConfig {
         properties.put(Environment.PASS, "123456");
         properties.put(Environment.SHOW_SQL, "true");
         properties.put(Environment.HBM2DDL_AUTO, "update");
+        properties.put("hibernate.use_nationalized_character_data", "true");
 
         /*Ht272705
             - Khai báo cho Hibernate biết các Class nào trong Java sẽ được ánh xạ xuống database

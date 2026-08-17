@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 
 <div class="navbar navbar-expand navbar-light bg-white"
      style="position: fixed; top: 0; left: 280px; right: 0; height: 60px; z-index: 1010; padding: 0 1.5rem; border-bottom: 1px solid #e2e8f0;">

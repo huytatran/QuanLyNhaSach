@@ -1,4 +1,4 @@
-/*
+﻿/*
   Bo sung trang thai lam viec cho nhan vien.
   Cac ban ghi cu mac dinh dang hoat dong (1).
 */
