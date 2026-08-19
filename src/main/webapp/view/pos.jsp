@@ -11,6 +11,7 @@
         table.table thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc; }
         table.table td { font-size: 13.5px; vertical-align: middle; color: #0f172a; }
     </style>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
 <jsp:include page="common/sidebar.jsp" />
@@ -48,6 +49,9 @@
                             </select>
                             <button class="btn text-white" onclick="searchSach()" style="background:#4f46e5;border-radius:6px;font-size:13px;">
                                 <i class="bi bi-funnel me-1"></i>Lọc
+                            </button>
+                            <button class="btn btn-outline-dark" onclick="moModalScanner()" style="border-radius:6px;font-size:13px;">
+                                <i class="bi bi-qr-code-scan me-1"></i> Quét Barcode
                             </button>
                             <c:if test="${not empty tuKhoa or (not empty maTLSelected and maTLSelected != '')}">
                                 <a href="${pageContext.request.contextPath}/pos" class="btn btn-link text-decoration-none" style="font-size:13px;color:#64748b;">
@@ -384,6 +388,24 @@
                     </p>
                 </div>
                 <div id="qrErrorMsg" style="display:none;" class="text-danger" style="font-size:12.5px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%-- Modal Quét Barcode Camera --%>
+<div class="modal fade" id="modalScanner" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content" style="border-radius:14px;border:none;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h6 class="fw-bold mb-0"><i class="bi bi-camera me-2 text-primary"></i>Quét mã vạch sản phẩm</h6>
+                <button type="button" class="btn-close" onclick="dongModalScanner()"></button>
+            </div>
+            <div class="modal-body px-4 pb-4 text-center">
+                <div id="reader" style="width: 100%; border-radius: 10px; overflow: hidden; background: #000;"></div>
+                <div id="scanResultMsg" class="mt-2 text-muted" style="font-size:12.5px;">
+                    Hướng camera về phía mã vạch trên cuốn sách...
+                </div>
             </div>
         </div>
     </div>
@@ -815,6 +837,78 @@
         appliedVoucher: '${appliedVoucher}',
         isNewCustomer: ${isNewCustomer}
     });
+
+    let html5QrCode = null;
+    let isScanning = false; // Chống spam request khi đọc 1 mã nhiều lần liền lúc
+
+    // Âm thanh bíp khi quét thành công (sử dụng AudioContext không cần file mp3)
+    function playBeep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 1000;
+            gain.gain.value = 0.1;
+            osc.start();
+            osc.stop(ctx.currentTime + 0.15);
+        } catch (e) {}
+    }
+
+    function moModalScanner() {
+        const modalEl = document.getElementById('modalScanner');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+        const config = {
+            fps: 15,
+            qrbox: { width: 300, height: 150 }, // Khung quét hình chữ nhật tối ưu cho Barcode
+            aspectRatio: 1.0
+        };
+
+        html5QrCode.start(
+            { facingMode: "environment" }, // Ưu tiên camera trước/webcam
+            config,
+            onScanSuccess
+        ).catch(err => {
+            document.getElementById('scanResultMsg').innerHTML =
+                '<span class="text-danger">Không thể mở camera. Vui lòng cấp quyền truy cập!</span>';
+        });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        if (isScanning) return; // Nếu đang xử lý mã trước đó thì bỏ qua
+        isScanning = true;
+
+        playBeep();
+        document.getElementById('scanResultMsg').innerHTML =
+            '<span class="text-success fw-bold">Đã quét: ' + escHtml(decodedText) + '</span>';
+
+        // Tự động gọi API add sách của PosServlet
+        addToCart(decodedText, '');
+
+        // Tạm dừng 1.5 giây trước khi cho phép quét cuốn tiếp theo
+        setTimeout(() => {
+            isScanning = false;
+            document.getElementById('scanResultMsg').textContent = 'Hướng camera về phía mã vạch tiếp theo...';
+        }, 1500);
+    }
+
+    function dongModalScanner() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                bootstrap.Modal.getInstance(document.getElementById('modalScanner')).hide();
+            }).catch(err => console.error(err));
+        } else {
+            const instance = bootstrap.Modal.getInstance(document.getElementById('modalScanner'));
+            if (instance) instance.hide();
+        }
+    }
 </script>
 </body>
 </html>

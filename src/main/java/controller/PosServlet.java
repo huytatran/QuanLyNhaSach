@@ -222,9 +222,21 @@ public class PosServlet extends HttpServlet {
 
         // ---- Thêm sách vào giỏ ----
         if ("add".equals(action)) {
-            String maSach      = request.getParameter("ma");
+            String maInput      = request.getParameter("ma");
             String maBienTheStr = request.getParameter("maBienThe");
-            Integer maBienThe  = parseIntOrNull(maBienTheStr);
+            Integer maBienThe   = parseIntOrNull(maBienTheStr);
+
+            // 1. Dùng findByAnyCode để tự động nhận diện mã truyền vào
+            // (dù là MaSach, MaSerial của sách vật lý hay MaBienTheCode)
+            Sach s = sachDAO.findByAnyCode(maInput);
+            if (s == null) {
+                sendJsonError(response, "Không tìm thấy sách với mã: " + maInput);
+                return;
+            }
+
+            // 2. Lấy MaSach gốc đã được ánh xạ chuẩn
+            String maSach = s.getMaSach();
+
             BigDecimal donGia;
             String tenBienThe = "";
             if (maBienThe != null && maBienThe > 0) {
@@ -233,28 +245,27 @@ public class PosServlet extends HttpServlet {
                 donGia     = bt.getGiaBienThe();
                 tenBienThe = bt.getTenHienThi();
             } else {
-                Sach s = sachDAO.getById(maSach);
-                if (s == null) { sendJsonError(response, "Sách không tồn tại."); return; }
                 donGia    = s.getGiaBan() != null ? s.getGiaBan() : BigDecimal.ZERO;
                 maBienThe = 0;
             }
+
             Map<String, Long> ton = sachDAO.getTonKhoMap();
             String key   = CartItem.buildKey(maSach, maBienThe);
             int hienTai  = gioHang.containsKey(key) ? gioHang.get(key).getSoLuong() : 0;
             long coSan   = ton.getOrDefault(maSach, 0L);
             if (hienTai + 1 > coSan) {
-                sendJsonError(response, "Không đủ tồn kho cho sách " + maSach);
+                sendJsonError(response, "Không đủ tồn kho cho sách " + s.getTenSach());
                 return;
             }
-            Sach s = sachDAO.getById(maSach);
+
             if (gioHang.containsKey(key)) {
                 gioHang.get(key).setSoLuong(hienTai + 1);
             } else {
                 gioHang.put(key, new CartItem(maSach, maBienThe == 0 ? null : maBienThe,
                         1, donGia,
-                        s != null ? s.getTenSach() : maSach,
+                        s.getTenSach(),
                         tenBienThe,
-                        s != null ? s.getAnhBia() : null));
+                        s.getAnhBia()));
             }
             sendJsonCartResponse(response, session, gioHang);
             return;

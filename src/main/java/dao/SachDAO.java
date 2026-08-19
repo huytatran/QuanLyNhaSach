@@ -588,4 +588,37 @@ public class SachDAO {
         st.setVaiTroTG(VAI_TRO_TAC_GIA);
         session.persist(st);
     }
+
+    /**
+     * Tim Sach bang bat ky ma nao: MaSach, MaSerial (sach vat ly), hoac MaBienTheCode (bien the).
+     * Dung cho chuc nang quet ma vach Barcode tren man hinh POS.
+     */
+    public Sach findByAnyCode(String scannedCode) {
+        if (scannedCode == null || scannedCode.isBlank()) {
+            return null;
+        }
+        String code = scannedCode.trim();
+
+        try (Session session = HibernateConfig.getFACTORY().openSession()) {
+            // Buoc 1: Dung Native Query de tim MaSach goc tu 1 trong 3 bang (Sach, SachVatLy, SachBienThe)
+            String sql = "SELECT TOP 1 s.MaSach FROM Sach s " +
+                    "LEFT JOIN SachVatLy svl ON s.MaSach = svl.MaSach " +
+                    "LEFT JOIN SachBienThe bt ON s.MaSach = bt.MaSach " +
+                    "WHERE (s.MaSach = :code OR svl.MaSerial = :code OR bt.MaBienTheCode = :code) " +
+                    "  AND (s.TrangThai IS NULL OR s.TrangThai = 1)";
+
+            @SuppressWarnings("unchecked")
+            List<String> result = session.createNativeQuery(sql, String.class)
+                    .setParameter("code", code)
+                    .getResultList();
+
+            if (result.isEmpty()) {
+                return null; // Khong tim thay voi bat ky ma nao
+            }
+
+            // Buoc 2: Co MaSach goc -> Goi lai getById() de fetch day du Entity (TheLoai, NhaXuatBan, BoSach...)
+            String realMaSach = result.get(0);
+            return getById(realMaSach);
+        }
+    }
 }
