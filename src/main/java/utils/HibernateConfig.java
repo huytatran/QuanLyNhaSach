@@ -20,7 +20,7 @@ public class HibernateConfig {
         properties.put(Environment.DRIVER, "com.microsoft.sqlserver.jdbc.SQLServerDriver");
         properties.put(Environment.URL, "jdbc:sqlserver://localhost:1433;databaseName=QuanLyNhaSach;encrypt=true;trustServerCertificate=true;sendStringParametersAsUnicode=true;useUnicode=true;characterEncoding=UTF-8;");
         properties.put(Environment.USER, "sa");
-        properties.put(Environment.PASS, "123456");
+        properties.put(Environment.PASS, "qưerty123");
         properties.put(Environment.SHOW_SQL, "true");
         properties.put(Environment.HBM2DDL_AUTO, "update");
         properties.put("hibernate.use_nationalized_character_data", "true");
