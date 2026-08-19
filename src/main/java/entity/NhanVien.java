@@ -32,7 +32,7 @@ public class NhanVien {
     private String matKhau;
 
     @Column(name = "VaiTroNV")
-    private Integer vaiTroNV;
+    private Short vaiTroNV;
 
     @Column(name = "TrangThai")
     private Boolean trangThai;

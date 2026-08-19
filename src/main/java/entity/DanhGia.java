@@ -24,7 +24,7 @@ public class DanhGia {
     private Sach sach;
 
     @Column(name = "SoSao")
-    private Integer soSao;
+    private Short soSao;
 
     @Column(name = "NoiDung")
     private String noiDung;

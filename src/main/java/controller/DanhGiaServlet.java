@@ -79,7 +79,7 @@ public class DanhGiaServlet extends HttpServlet {
                 DanhGia dg = new DanhGia();
                 dg.setKhachHang(kh);
                 dg.setSach(sach);
-                dg.setSoSao(Integer.parseInt(soSao));
+                dg.setSoSao(Short.parseShort(soSao));
                 dg.setNoiDung(noiDung);
 
                 // Lưu xuống DB
