@@ -20,7 +20,7 @@ public class Voucher {
     private String maCode;
 
     @Column(name = "LoaiGiam")
-    private Integer loaiGiam;
+    private Short loaiGiam;
 
     @Column(name = "GiaTri")
     private BigDecimal giaTri;
