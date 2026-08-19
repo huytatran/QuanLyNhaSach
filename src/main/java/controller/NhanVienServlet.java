@@ -106,7 +106,8 @@ public class NhanVienServlet extends HttpServlet {
         nv.setDiaChi(trim(request.getParameter("diaChi")));
         nv.setTaiKhoan(trim(request.getParameter("taiKhoan")));
         nv.setMatKhau(trim(request.getParameter("matKhau")));
-        nv.setVaiTroNV(parseInt(request.getParameter("vaiTroNV")) == null ? 0 : parseInt(request.getParameter("vaiTroNV")));
+        Integer vaiTroNhap = parseInt(request.getParameter("vaiTroNV"));
+        nv.setVaiTroNV(vaiTroNhap == null ? (short) 0 : vaiTroNhap.shortValue());
 
         // DÒNG MỚI BỔ SUNG: Bắt giá trị ca làm việc từ Form
         nv.setCaLamViec(trim(request.getParameter("caLamViec")));

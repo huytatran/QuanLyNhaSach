@@ -147,7 +147,7 @@ public class VoucherServlet extends HttpServlet {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
                 Voucher v = new Voucher();
                 v.setMaCode(maCode);
-                v.setLoaiGiam(Integer.parseInt(loaiGiam));
+                v.setLoaiGiam(Short.parseShort(loaiGiam));
                 v.setGiaTri(new BigDecimal(giaTri));
                 v.setGiaTriDonToiThieu(new BigDecimal(giaTriDonToiThieu));
                 v.setGiaGiamToiDa(new BigDecimal(giaGiamToiDa));

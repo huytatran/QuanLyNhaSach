@@ -24,7 +24,7 @@ public class DonHang {
     private BigDecimal tongTien;
 
     @Column(name = "TrangThai")
-    private Integer trangThai;
+    private Short trangThai;
 
     @Column(name = "PhuongThucThanhToan")
     private String phuongThucThanhToan;
